@@ -9,17 +9,18 @@ const bookingHistorySchema = mongoose.Schema({
     },
     Bookings:{
         type:mongoose.Schema.Types.ObjectId,
-        ref:"BookingClient",
+        ref:"Booking",
         required:true
     },
     serviceMan:{
         type:mongoose.Schema.Types.ObjectId,
         ref:"ServiceMan",
-        required:true
+        required:false
     },
     BookingStatus:{
        type:String,
-       enum:["completed","canceled","Pending"]
+       enum:["completed","canceled","Pending"],
+       default:"pending"
     }
 },
 {

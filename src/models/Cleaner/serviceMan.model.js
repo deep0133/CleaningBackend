@@ -6,13 +6,14 @@ const serviceManSchema = new Schema(
             required: true,
             unique: true
         },
-       category:[
-        {
-            type:String,
-            required:true
-        }
-       ]
-      
+        category: [
+            {
+                type: String,
+                enum:["cleaning","deepCleaning","sprayCleaning","others"],
+                required: true
+            }
+        ]
+
     },
     {
         timestamps: true
