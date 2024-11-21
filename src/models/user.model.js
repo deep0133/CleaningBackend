@@ -5,7 +5,6 @@ export const userSchema = new Schema(
         Name: {
             type: String,
             required: true,
-
             lowercase: true,
             trim: true,
             index: true
@@ -23,6 +22,7 @@ export const userSchema = new Schema(
         },
         role: {
             type: String,
+            enum: ["client", "cleaner", "Admin"],
             required: true
         },
 
@@ -35,7 +35,7 @@ export const userSchema = new Schema(
                 trim: true
             }
         ],
-        
+
 
         refreshToken: {
             type: String
@@ -48,7 +48,7 @@ export const userSchema = new Schema(
 )
 
 
-export const User = mongoose.model("User",userSchema);
+export const User = mongoose.model("User", userSchema);
 
 
 

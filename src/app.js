@@ -16,9 +16,7 @@ app.use(express.urlencoded({
 }))
 
 
-import clientRouter from './routes/client.router.js'
 
-app.use("/api/v1/client",clientRouter);
 
 
 

@@ -11,26 +11,29 @@ const bookingSchema = mongoose.Schema(
         },
         category: {
             type: String,
+            enum:["basic cleaning","deep cleaning"],
             required: true,
         },
         PaymentMethod: {
             type: String,
-            required: true
+            required: true,
+            enum:["card","cash","online"]
         },
         PaymentValue: {
             type: String,
         },
         PaymentStatus: {
-            type: Boolean,
+            type: String,
             required: true,
+            enum:['paid',"pending","failed"]
         },
         BookingStatus: {
             type: Boolean,
             required: true,
         },
         TimeSlot: {
-            type: String,
-            required: true,
+            start: { type: Date, required: true }, 
+      end: { type: Date, required: true }, 
 
         },
        serviceType:{
@@ -44,4 +47,4 @@ const bookingSchema = mongoose.Schema(
 }
 )
 
-export const BookingService = mongoose.model("BookingService", bookingSchema)
+export const BookingService = mongoose.model("Booking", bookingSchema)
