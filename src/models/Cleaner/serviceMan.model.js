@@ -9,7 +9,6 @@ const serviceManSchema = new Schema(
         category: [
             {
                 type: String,
-                enum:["cleaning","deepCleaning","sprayCleaning","others"],
                 required: true
             }
         ]
@@ -19,5 +18,7 @@ const serviceManSchema = new Schema(
         timestamps: true
     }
 );
+
+
 
 export const ServiceMan = mongoose.model('ServiceMan', serviceManSchema);
