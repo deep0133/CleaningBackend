@@ -107,12 +107,9 @@ status(200)
 })
 
 const login =  asyncHandler( async (req,res)=>{
-    // take data entered by user --done
-    //  operate username or email  --done
-    // find the user  done
-    // password check done
-    // generate access and refresh token --done
-    // send cookie (token) pass token
+// take number and password from the user
+// send otp to the user at his number and save the otp to the database 
+// take otp from the user  and validate it from the database
 
     const {phoneNumber,password} = req.body;
   
@@ -123,6 +120,8 @@ if(!phoneNumber ){
 const user = await User.findOne({
     $or:[{phoneNumber:phoneNumber}]
 });
+
+
 
 
 
@@ -141,9 +140,9 @@ if(!isPasswordValid){
 }
 
 
-const {accessToken,refreshToken} = await generateAccessandRefreshTokens(user._id);
-console.log("accessToken",accessToken);
-console.log("refreshToken",refreshToken);
+// const {accessToken,refreshToken} = await generateAccessandRefreshTokens(user._id);
+// console.log("accessToken",accessToken);
+// console.log("refreshToken",refreshToken);
 
 
 const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
