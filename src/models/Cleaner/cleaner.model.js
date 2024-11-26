@@ -1,4 +1,7 @@
-const serviceManSchema = new Schema(
+import mongoose from "mongoose";
+import { Schema } from "mongoose";
+
+const cleaner = new Schema(
     {
         user: {
             type: mongoose.Schema.Types.ObjectId,
@@ -21,4 +24,4 @@ const serviceManSchema = new Schema(
 
 
 
-export const ServiceMan = mongoose.model('ServiceMan', serviceManSchema);
+export const Cleaner = mongoose.model('cleaner', cleaner);
