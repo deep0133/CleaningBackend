@@ -8,18 +8,20 @@ const client = twilio(accountSid, authToken);
 
 const sendOtp = (phoneNumber)=>{
 try {
-        async function createVerification() {
+        async function createVerification() 
+        {
             const verification = await client.verify.v2
               .services(accountSid)
               .verifications.create({
                 channel: "sms",
-                to: phoneNumber,
+                to:phoneNumber,
               });
           
             console.log(verification.status);
           }
 
           createVerification();
+          
 } catch (error) {
     console.log(error)
 }

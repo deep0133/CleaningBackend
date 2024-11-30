@@ -4,6 +4,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from '../../utils/apiError.js'
 import {ApiResponse} from '../../utils/apiResponse.js'
 import { sendOtp } from "../../utils/sendOtp.js";
+import Api from "twilio/lib/rest/Api.js";
 
 
 const register = asyncHandler(async (req, res) => {
@@ -115,29 +116,26 @@ const login =  asyncHandler( async (req,res)=>{
   
 if(!phoneNumber ){
     throw new ApiError(400,"email or username is required")
-}
+};
 // check if the user exists or not
+
 const user = await User.findOne({
     $or:[{phoneNumber:phoneNumber}]
 });
 
-
-
-
-
 if(!user){
-    throw new ApiError(401,"Invalid user Credentials");
-}
+    throw new ApiError(401,"user does not exist");
+};
 
 if(!password){
     throw new ApiError(401,"password is required")
-}
+};
 
 const isPasswordValid =await user.isPasswordCorrect(password);
 
 if(!isPasswordValid){
     throw new ApiError(401,"Invalid user credentials");
-}
+};
 
 
 // const {accessToken,refreshToken} = await generateAccessandRefreshTokens(user._id);
@@ -145,29 +143,28 @@ if(!isPasswordValid){
 // console.log("refreshToken",refreshToken);
 
 
-const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+const loggingInfo = await User.findById(user._id).select("-password ");
 
-
-const options ={
-    secure:true,
-    httpOnly: true
-}
 
 
 res.
 status(200)
-.cookie("accessToken",accessToken,options)
-.cookie("refreshToken",refreshToken,options)
 .json(new ApiResponse(200,
     {
-        user:loggedInUser,accessToken,refreshToken
+        user:loggingInfo
 
 },
-"user logged in successfully"
+"user info is correct do further verification"
 )
 )
+})
 
+const otpVerification = asyncHandler(async(req,res)=>{
+const opt = req.body;
 
+if(!otp){
+    ApiError(400,'otp is required');
+}
 
 })
 

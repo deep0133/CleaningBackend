@@ -14,7 +14,10 @@ const cleaner = new Schema(
                 type: String,
                 required: true
             }
-        ]
+        ],
+        otp:{
+            type:String,
+        }
 
     },
     {
