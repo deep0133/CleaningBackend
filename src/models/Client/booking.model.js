@@ -36,12 +36,7 @@ const bookingSchema = mongoose.Schema(
       end: { type: Date, required: true }, 
 
         },
-       serviceType:{
-        type:String,
-        enum:["cleaning","others"]
-       }
-
-
+       
     }, {
     timestamps: true
 }
