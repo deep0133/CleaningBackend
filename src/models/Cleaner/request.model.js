@@ -1,26 +1,27 @@
 import mongoose from "mongoose";
-import { BookingClient } from "../Client/booking.client";
-import { required } from "nodemon/lib/config";
 
-const requestSchema = mongoose.Schema({
-    BookingClient: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Booking",
-        required: true,
+const requestSchema = new mongoose.Schema(
+  {
+    bookingClient: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Booking",
+      required: [true, "Booking client is required"],
     },
-    serviceMan:{
-         type:mongoose.Schema.Types.ObjectId,
-         ref:"serviceMan",
-        
+    serviceMan: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ServiceMan", // Ensure the referenced model name matches your actual model
     },
     requestStatus: {
-        type: String,
-        enum: ["accept", "reject", "pending"],
-        required: true,
-        default:'pending'
-    }
-}, {
-    timestamps: true
-})
+      type: String,
+      enum: ["accept", "reject", "pending"],
+      default: "pending",
+      required: true,
+    },
+  },
+  {
+    timestamps: true, 
+    versionKey: false,
+  }
+);
 
-export const ClientRequest = mongoose.model("ClientRequest", requestSchema)
+export const ClientRequest = mongoose.model("ClientRequest", requestSchema);
