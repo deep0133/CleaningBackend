@@ -10,10 +10,7 @@ const connectDB = async () => {
 
     console.log("Connecting to MongoDB...");
 
-    const connection = await mongoose.connect(mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    const connection = await mongoose.connect(mongoURI);
 
     console.log(
       `MongoDB connected successfully! Host: ${connection.connection.host}`
