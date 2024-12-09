@@ -7,6 +7,11 @@ const bookingSchema = mongoose.Schema(
       ref: "User",
       required: true,
     },
+    Cleaner: {
+      // accepted cleaner id
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Cleaner",
+    },
     category: {
       type: String,
       enum: ["basic cleaning", "deep cleaning"],
@@ -32,6 +37,37 @@ const bookingSchema = mongoose.Schema(
     TimeSlot: {
       start: { type: Date, required: true },
       end: { type: Date, required: true },
+    },
+    OTP: {
+      start: { type: String },
+      end: { type: String },
+    },
+    Duration: {
+      type: Number, // in minutes
+    },
+    TotalPrice: {
+      type: Number,
+    },
+    UserAddress: {
+      type: String,
+    },
+    Duration: {
+      type: Number, // in minutes
+    },
+    TotalPrice: {
+      type: Number,
+    },
+    UserAddress: {
+      type: String,
+    },
+    Location: {
+      type: {
+        type: String, // Always 'Point'
+        enum: ["Point"],
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+      },
     },
   },
   {

@@ -181,11 +181,56 @@ const updateProfile = asyncHandler(async (req, res) => {
 });
 
 const updateAddress = asyncHandler(async (req, res) => {
+  const { address, addressId } = req.body;
+
+  // Find the user by their ID
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    return res.status(404).json({ success: false, message: "User not found" });
+  }
+
+  if (!address && !addressId) {
+    return res.status(400).json({
+      success: false,
+      message: "Provide either a new address or an addressId to update",
+    });
+  }
+
+  // Update address if `addressId` is provided
+  if (addressId) {
+    const addressIndex = user.address.findIndex(
+      (addr) => addr._id.toString() === addressId
+    );
+
+    if (addressIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: "Address with the given ID not found",
+      });
+    }
+
+    // Update the existing address
+    user.address[addressIndex] = address;
+  } else if (address) {
+    // Push a new address if `addressId` is not provided
+    user.address.push(address);
+  }
+
+  // Save the updated user
+  await user.save();
+
+  res
+    .status(200)
+    .json({ success: true, message: "Address updated successfully" });
+});
+
+const addNewAddress = asyncHandler(async (req, res) => {
   const { address } = req.body;
 
   const user = await User.findById(req.user._id);
 
-  if (address) user.address = address;
+  if (address) user.address.push(address);
 
   await user.save();
 
@@ -332,6 +377,7 @@ export {
   login,
   logout,
   updateAddress,
+  addNewAddress,
   changePassword,
   submitContactForm,
   getAllContact,

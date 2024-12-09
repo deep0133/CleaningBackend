@@ -16,7 +16,7 @@ export const userSchema = new Schema(
       type: String,
       required: true,
       unique: true,
-      lowecase: true,
+      lowercase: true,
       trim: true,
     },
     phoneNumber: {
@@ -30,8 +30,8 @@ export const userSchema = new Schema(
     },
     role: {
       type: String,
-      enum: ["client", "cleaner", "Admin"],
-      required: true,
+      enum: ["client", "cleaner", "admin"],
+      default: "client",
     },
     address: [
       {
@@ -41,6 +41,15 @@ export const userSchema = new Schema(
         trim: true,
       },
     ],
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+      },
+      coordinates: {
+        type: [Number],
+      },
+    },
     accessToken: {
       type: String,
     },
@@ -100,6 +109,10 @@ userSchema.methods.generateRefreshToken = function () {
 
 userSchema.methods.matchPassword = async function (password) {
   return await bcrypt.compare(password, this.password);
+};
+
+userSchema.methods.isOtpValid = function () {
+  return this.otpExpiry && this.otpExpiry > Date.now();
 };
 
 export const User = mongoose.model("User", userSchema);
