@@ -2,16 +2,8 @@ import mongoose from "mongoose";
 
 const bookingSchema = mongoose.Schema(
   {
-    User: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    Cleaner: {
-      // accepted cleaner id
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Cleaner",
-    },
+    User: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    Cleaner: { type: mongoose.Schema.Types.ObjectId, ref: "Cleaner" },
     category: {
       type: String,
       enum: ["basic cleaning", "deep cleaning"],
@@ -22,44 +14,24 @@ const bookingSchema = mongoose.Schema(
       required: true,
       enum: ["card", "cash", "online"],
     },
-    PaymentValue: {
-      type: String,
-    },
+    PaymentValue: { type: String },
     PaymentStatus: {
       type: String,
       required: true,
       enum: ["paid", "pending", "failed"],
     },
-    BookingStatus: {
-      type: Boolean,
-      required: true,
-    },
+    BookingStatus: { type: Boolean, required: true },
     TimeSlot: {
       start: { type: Date, required: true },
       end: { type: Date, required: true },
     },
-    OTP: {
-      start: { type: String },
-      end: { type: String },
-    },
-    Duration: {
-      type: Number, // in minutes
-    },
-    TotalPrice: {
-      type: Number,
-    },
-    UserAddress: {
-      type: String,
-    },
-    Duration: {
-      type: Number, // in minutes
-    },
-    TotalPrice: {
-      type: Number,
-    },
-    UserAddress: {
-      type: String,
-    },
+    OTP: { start: { type: String }, end: { type: String } },
+    Duration: { type: Number },
+    TotalPrice: { type: Number },
+    razorpayOrderId: { type: String }, // Razorpay order ID (if online payment)
+    razorpayPaymentId: { type: String }, // Razorpay payment ID (on verification)
+    razorpaySignature: { type: String }, // Razorpay signature (on verification)
+    UserAddress: { type: String },
     Location: {
       type: {
         type: String, // Always 'Point'
