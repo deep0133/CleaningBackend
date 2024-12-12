@@ -8,7 +8,7 @@ app.use(cors({
     Credential:true
 }))
 
-app.use(express.json({limit:"16kb"}));
+app.use(express.json());
 app.use(express.static("public"));
 app.use(express.urlencoded({
     limit:"16kb",

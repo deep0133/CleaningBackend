@@ -5,6 +5,7 @@ import { ApiError } from "../../utils/apiError.js";
 import { ApiResponse } from "../../utils/apiResponse.js";
 import { Contact } from "../../models/contactSchema.js";
 import twilio from "twilio"; // Twilio for SMS
+import { sendOtp } from "../../utils/sendOtp.js";
 
 // Twilio configuration
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -44,8 +45,7 @@ const register = asyncHandler(async (req, res) => {
     throw new ApiError(409, "User with this  email  already exists");
   }
   if (
-    role === "cleaner" &&
-    (!Array.isArray(category) || category.length === 0)
+    role === "cleaner" && category===""
   ) {
     throw new ApiError(400, "Category field is required for cleaners");
   }
@@ -73,13 +73,17 @@ const register = asyncHandler(async (req, res) => {
   user.refreshToken = refreshToken;
   await user.save({ validateBeforeSave: false });
 
-  if (!Array.isArray(category) || category.length === 0) {
-    throw new ApiError(400, "Category is required for serviceMan");
-  }
+
 
   const createdUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
+
+
+
+  await sendOtp(phoneNumber);
+
+  console.log(">>>>>>>>>>>>>>>>>>>>>>???????????????",createdUser)
 
   if (!createdUser) {
     throw new ApiError(500, "Something went wrong while registering the user");
@@ -135,6 +139,8 @@ const login = asyncHandler(async (req, res) => {
   user.refreshToken = refreshToken;
 
   const loggingInfo = await User.findById(user._id).select("-password ");
+
+  res.set("Authorization", `Bearer ${accessToken}`);
 
   res.status(200).json(
     new ApiResponse(

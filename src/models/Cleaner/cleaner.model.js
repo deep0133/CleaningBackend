@@ -9,12 +9,11 @@ const cleaner = new Schema(
       required: true,
       unique: true,
     },
-    category: [
-      {
-        type: String,
-        required: true,
-      },
-    ],
+    category: {
+      type:String,
+      default:"deep Cleaning",
+      
+    },
     otp: {
       type: String,
     },
