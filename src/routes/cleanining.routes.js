@@ -1,4 +1,4 @@
-import express from 'express';
+import express from "express";
 
 const cleaningServiceRouter = express.Router();
 
@@ -8,4 +8,4 @@ cleaningServiceRouter.put("/update/:id", updateCleaningService);
 
 cleaningServiceRouter.post("/delete/:id", deleteCleaningService);
 
-export default cleaningServiceRouter
+export default cleaningServiceRouter;

@@ -1,0 +1,39 @@
+import { Router } from "express";
+import {
+  changePassword,
+  forgotPassword,
+  getAllContact,
+  login,
+  logout,
+  register,
+  verifyOtp,
+  submitContactForm,
+  updateAddress,
+  myProfile,
+  addNewAddress,
+} from "../controllers/user/user.controller.js";
+import { isAdmin, isAuthenticated } from "../middleware/authenticateUser.js";
+const router = Router();
+
+// Login, Signup Route & Logout
+router.post("/register", register);
+router.post("/login", login);
+
+router.post("/logout", isAuthenticated, logout);
+
+router.get("/me", isAuthenticated, myProfile);
+
+// Update Routes
+router.post("/add/address", isAuthenticated, addNewAddress);
+router.post("/update/address", isAuthenticated, updateAddress);
+router.post("/change/password", isAuthenticated, changePassword);
+
+// Contact Us : Help & Support
+router.get("/contact", isAuthenticated, isAdmin, getAllContact);
+router.post("/contact", isAuthenticated, submitContactForm);
+
+// Forgot Password & Reset Password
+router.post("/forgot/password", forgotPassword);
+router.post("/reset/password", verifyOtp);
+
+export default router;

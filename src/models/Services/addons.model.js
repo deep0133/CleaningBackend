@@ -6,5 +6,5 @@ const AddOnSchema = new mongoose.Schema({
   price: { type: Number, required: true }, // Price in smallest currency unit (e.g., cents or paise)
 });
 
-const AddOnModel=mongoose.model("AddOns", AddOnSchema);
-export default AddOnModel
+const AddOnModel = mongoose.model("AddOns", AddOnSchema);
+export default AddOnModel;
