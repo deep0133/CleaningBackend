@@ -71,6 +71,14 @@ const register = asyncHandler(async (req, res) => {
 
   user.accessToken = accessToken;
   user.refreshToken = refreshToken;
+
+  // const response =  await sendOtp(phoneNumber);
+
+  // console.log("send otp responses........",response.message)
+  // if(response.success===false){
+  //   throw new ApiError(401,"verification failed try again")
+  // }
+
   await user.save({ validateBeforeSave: false });
 
 
@@ -80,9 +88,7 @@ const register = asyncHandler(async (req, res) => {
 
 
 
-  await sendOtp(phoneNumber);
 
-  console.log(">>>>>>>>>>>>>>>>>>>>>>???????????????",createdUser)
 
   if (!createdUser) {
     throw new ApiError(500, "Something went wrong while registering the user");
@@ -167,6 +173,7 @@ const logout = asyncHandler(async (req, res) => {
 });
 const myProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
+  console.log("user/........",user);
   res.status(200).json({ success: true, user });
 });
 
@@ -224,7 +231,7 @@ const submitContactForm = asyncHandler(async (req, res, next) => {
   }
 
   const newContact = new Contact({
-    userId: req.user._id, // Attach user ID if authenticated
+    userId: req.user._id, 
     fullName,
     email,
     mobileNumber,
