@@ -73,7 +73,10 @@ const register = asyncHandler(async (req, res) => {
   user.refreshToken = refreshToken;
   await user.save({ validateBeforeSave: false });
 
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 
   const createdUser = await User.findById(user._id).select(
     "-password -refreshToken"
