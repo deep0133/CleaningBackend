@@ -8,76 +8,147 @@ const stripe=new Stripe(process.env.STRIPE_SERCRET_KEY)
 
 
 
-const placeOrder=async(req,res)=>{
-    const frontend_url=`http://localhost:5173`
+const verifyOrder= async (req, res) => {
+  try {
+    const { items, totalAmount } = req.body;
     
-    try {
-        const newOrder=new orderModel({
-            userId:req.body.userId,
-            items:req.body.items,
-            amount:req.body.amount,
-            address:req.body.address,
-        })
-
-        await newOrder.save()
-        await userModel.findByIdAndUpdate(req.body.userId,{cart:{}})
-
-
-        // Line items
-        const line_items=req.body.items.map((item)=>({
-            price_data:{
-                currency:"inr",
-                product_data:{
-                    name:item.name
-                },
-                unit_amount:item.price*100*80
-            },
-            quantity:item.quanitiy
-        }))
-
-        line_items.push({
-            price_data:{
-                currency:"inr",
-                product_data:{
-                    name:"Delivery Charges"
-                },
-                unit_amount:2*100*80
-            },
-            quantity:1
-        })
-        
-        // creating session
-        const session=await stripe.checkout.sessions.create({
-            line_item:line_items,
-            mode:'payment',
-            success_url:`${frontend_url}/verify?success=true&orderId=${newOrder._id}`,
-            cancel_url:`${frontend_url}/verify?success=true&orderId=${newOrder._id}`
-        })
-
-
-        res.json({success:true,session_url:session.url})
-    } catch (error) {
-        console.log(error)
-        res.json({success:false,message:"ERROR"})
-    }
-}
-
-const verifyOrder=async(req,res)=>{
-    const {orderId,success}=req.body;
-    try {
-        if(success=="true"){
-            await orderModel.findByIdAndUpdate(orderId,{payment:true});
-            res.json({success:true,message:"Paid"})
-        }else{
-            await orderModel.findByIdAndDelete(orderId);
-            res.json({success:false,message:"Not Paid"})
-        }
-    } catch (error) {
-        console.log(error)
-        res.json({success:false,message:"Error"})
-        
+    // Verify items are in stock
+    const outOfStockItems = await checkStockAvailability(items);
+    if (outOfStockItems.length > 0) {
+      return res.status(400).json({
+        error: 'Some items are out of stock',
+        items: outOfStockItems
+      });
     }
 
-}
+    // Verify prices and calculate total
+    const calculatedTotal = await calculateOrderTotal(items);
+    if (calculatedTotal !== totalAmount) {
+      return res.status(400).json({
+        error: 'Price mismatch',
+        expectedTotal: calculatedTotal,
+        receivedTotal: totalAmount
+      });
+    }
+
+    res.json({ 
+      verified: true,
+      total: calculatedTotal
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// 2. Create payment intent with order details
+export const createBooking = asyncHandler(async (req, res) => {
+    const {
+      category,
+      timeSlot, // { start: Date, end: Date }
+      paymentMethod,
+      paymentValue,
+      userAddress,
+      location, // { type: "Point", coordinates: [longitude, latitude] }
+      addOns = [], // Array of add-ons selected by the user
+    } = req.body;
+  
+    const duration = Math.round(
+      (new Date(timeSlot.end) - new Date(timeSlot.start)) / (1000 * 60)
+    );
+  
+    const totalPrice = calculateTotalPrice(category, addOns, duration); // Replace with your pricing logic
+  
+    const session = await mongoose.startSession();
+    session.startTransaction();
+  
+    try {
+      const booking = new BookingService({
+        User: req.user._id,
+        category,
+        PaymentMethod: paymentMethod,
+        PaymentValue: paymentValue,
+        PaymentStatus: "pending",
+        BookingStatus: false,
+        TimeSlot: timeSlot,
+        OTP: {
+          start: Math.floor(1000 + Math.random() * 9000).toString(),
+          end: Math.floor(1000 + Math.random() * 9000).toString(),
+        },
+        Duration: duration,
+        TotalPrice: totalPrice,
+        UserAddress: userAddress,
+        Location: location,
+      });
+  
+      await booking.save({ session });
+  
+      const order = await Order.create({
+        items: addOns,
+        totalAmount: totalPrice,
+        status: 'pending',
+        user: req.user._id,
+        createdAt: new Date(),
+      });
+  
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: totalPrice * 100,
+        currency: "INR",
+        metadata: {
+          orderId: order._id.toString(),
+        },
+      });
+  
+      await session.commitTransaction();
+      res.status(201).json({
+        success: true,
+        booking,
+        clientSecret: paymentIntent.client_secret,
+        orderId: order._id,
+      });
+    } catch (error) {
+      await session.abortTransaction();
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to create booking",
+        stack: error.stack,
+      });
+    } finally {
+      session.endSession();
+    }
+  });
+  
+
+// 3. Complete order after payment
+app.post('/complete-order', async (req, res) => {
+  try {
+    const { orderId, paymentIntentId } = req.body;
+
+    // Verify payment was successful
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if (paymentIntent.status !== 'succeeded') {
+      throw new Error('Payment not successful');
+    }
+
+    // Update order status
+    const order = await Order.findByIdAndUpdate(orderId, {
+      status: 'confirmed',
+      paymentId: paymentIntentId,
+      updatedAt: new Date()
+    }, { new: true });
+
+    // Reduce inventory quantities
+    await updateInventory(order.items);
+
+    // Send order confirmation email
+    await sendOrderConfirmation(order);
+
+    res.json({ 
+      success: true, 
+      order 
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 export {placeOrder,verifyOrder}

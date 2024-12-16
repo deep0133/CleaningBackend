@@ -30,65 +30,6 @@ export const createBooking = asyncHandler(async (req, res) => {
     addOns = [], // Array of add-ons selected by the user
   } = req.body;
 
-  // Validate input
-  if (!category || !timeSlot || !paymentMethod || !userAddress || !location) {
-    return res.status(400).json({
-      success: false,
-      message: "All fields are required",
-    });
-  }
-
-  if (!timeSlot.start || !timeSlot.end) {
-    return res.status(400).json({
-      success: false,
-      message: "TimeSlot must include start and end times",
-    });
-  }
-
-  if (new Date(timeSlot.start) >= new Date(timeSlot.end)) {
-    return res.status(400).json({
-      success: false,
-      message: "TimeSlot start time must be before end time",
-    });
-  }
-
-  if (!paymentValue || paymentValue <= 0) {
-    return res.status(400).json({
-      success: false,
-      message: "Payment value must be greater than zero",
-    });
-  }
-
-  // Step 1: Fetch the service based on category
-  const service = await ServiceModel.findOne({ name: category });
-
-  if (!service) {
-    return res.status(404).json({
-      success: false,
-      message: "Service not found",
-    });
-  }
-
-  // Step 2: Calculate the total price based on the service price and add-ons
-  let totalPrice = service.pricePerHour; // Base price for the service
-
-  // Add the price of selected add-ons
-  if (addOns.length > 0) {
-    for (let addOnId of addOns) {
-      const addOn = await AddOnModel.findById(addOnId); // Find each add-on by its ID
-      if (addOn) {
-        totalPrice += addOn.price; // Add the add-on price to the total
-      }
-    }
-  }
-
-  // Step 3: Validate that the payment value matches the calculated total price
-  if (paymentValue !== totalPrice) {
-    return res.status(400).json({
-      success: false,
-      message: `Payment amount should be ${totalPrice}, but received ${paymentValue}`,
-    });
-  }
 
   // Calculate duration in minutes
   const duration = Math.round(
@@ -146,23 +87,7 @@ export const createBooking = asyncHandler(async (req, res) => {
       orderId: order._id
     });
 
-        // Step 5: Razorpay order creation if paymentMethod is "online"
-    // let razorpayOrder = null;
 
-    // if (paymentMethod === "online") {
-    //   const amountInPaisa = totalPrice * 100; // Convert to paisa
-    //   razorpayOrder = await razorpay.orders.create({
-    //     amount: amountInPaisa,
-    //     currency: "INR",
-    //     receipt: `receipt_${booking._id}`, // Unique receipt for this booking
-    //   });
-
-    //   // Store the Razorpay order ID in the booking document
-    //   booking.razorpayOrderId = razorpayOrder.id;
-    //   await booking.save({ session }); // Save updated booking with Razorpay order ID
-    // }
-
-    // Stipe begins here
 
   } catch (error) {
     // Abort the transaction in case of failure
