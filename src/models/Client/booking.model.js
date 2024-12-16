@@ -20,7 +20,7 @@ const bookingSchema = mongoose.Schema(
       required: true,
       enum: ["paid", "pending", "failed"],
     },
-    BookingStatus: { type: Boolean, required: true },
+    BookingStatus: { type: Boolean, required: true }, // when accepted : true
     TimeSlot: {
       start: { type: Date, required: true },
       end: { type: Date, required: true },

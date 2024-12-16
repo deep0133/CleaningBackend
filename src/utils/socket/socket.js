@@ -6,6 +6,7 @@ io.on("connection", (socket) => {
   // When a cleaner is notified
   socket.on("sendNotification", (cleanerId, bookingDetails) => {
     // Emit event to the cleaner's socket ID
+    console.log("-------check socket---");
     io.to(cleanerId).emit("newBooking", bookingDetails);
   });
 

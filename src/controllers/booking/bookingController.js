@@ -18,67 +18,6 @@ const createBookingRequestData = {
   },
 };
 
-// export const createBooking = asyncHandler(async (req, res) => {
-//   const {
-//     category,
-//     timeSlot,
-//     paymentMethod,
-//     paymentValue,
-//     userAddress,
-//     location,
-//   } = req.body;
-
-//   // Validate required fields
-//   if (!category || !timeSlot || !paymentMethod || !userAddress || !location) {
-//     return res.status(400).json({
-//       success: false,
-//       message: "All fields are required",
-//     });
-//   }
-
-//   // Check if the payment value is valid
-//   if (!paymentValue || paymentValue <= 0) {
-//     return res.status(400).json({
-//       success: false,
-//       message: "Payment value must be greater than zero",
-//     });
-//   }
-
-//   const booking = await BookingService.create({
-//     User: req.user._id, // User ID from JWT
-//     category,
-//     PaymentMethod: paymentMethod,
-//     PaymentValue: paymentValue,
-//     PaymentStatus: "pending",
-//     BookingStatus: false, // Pending until a cleaner accepts
-//     TimeSlot: timeSlot,
-//     UserAddress: userAddress,
-//     Location: location,
-//   });
-
-//   // Find nearby cleaners (to send requests asynchronously)
-//   const nearbyCleaners = await Cleaner.find({
-//     location: {
-//       $near: {
-//         $geometry: location,
-//         $maxDistance: 10000, // 10 km radius
-//       },
-//     },
-//     category: { $in: [category] },
-//     availability: true,
-//   });
-
-//   // Notify cleaners (via a queue or socket logic)
-//   nearbyCleaners.forEach((cleaner) => {
-//     // Send a request (example: Twilio SMS or socket message)
-//     console.log(`Notified cleaner: ${cleaner.user}`);
-//   });
-
-//   res.status(201).json({ success: true, booking });
-// });
-
-// Allows the user to see available cleaners before they finalize a booking.
-
 export const createBooking = asyncHandler(async (req, res) => {
   const {
     category,
@@ -197,24 +136,6 @@ export const createBooking = asyncHandler(async (req, res) => {
       await booking.save({ session }); // Save updated booking with Razorpay order ID
     }
 
-    // Step 6: Find nearby cleaners who match the category and are available
-    const nearbyCleaners = await Cleaner.find({
-      location: {
-        $near: {
-          $geometry: location,
-          $maxDistance: 10000, // 10 km radius
-        },
-      },
-      category: { $in: [category] },
-      availability: true,
-    });
-
-    // Notify cleaners (this should be done asynchronously, e.g., via SMS or WebSocket)
-    nearbyCleaners.forEach((cleaner) => {
-      console.log(`Notified cleaner: ${cleaner.user}`);
-      // Replace this with actual notification logic (e.g., SMS, email, WebSocket)
-    });
-
     // Commit the transaction
     await session.commitTransaction();
     session.endSession();
@@ -282,9 +203,20 @@ export const verifyPayment = async (req, res) => {
         availability: true, // Ensure the cleaner is available
       });
 
+      // Prepare the data to be sent in the notification
+      const notificationData = {
+        user: booking.User,
+        location: booking.Location,
+        address: booking.UserAddress,
+        totalPrice: booking.TotalPrice,
+        timeSlot: booking.TimeSlot,
+        duration: booking.Duration,
+        category: booking.category,
+      };
+
       // 6. Send notification to each nearby cleaner
       nearbyCleaners.forEach((cleaner) => {
-        sendNotificationToCleaner(cleaner, booking); // Send notification to each cleaner
+        sendNotificationToCleaner(cleaner, notificationData); // Send notification to each cleaner
       });
 
       // Send the response to the client
