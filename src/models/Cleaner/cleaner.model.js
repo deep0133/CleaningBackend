@@ -51,6 +51,7 @@ const cleaner = new Schema(
       type: Number,
       default: 0, // Total earnings from bookings
     },
+    isOnline: Boolean,
   },
   {
     timestamps: true,
