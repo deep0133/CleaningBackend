@@ -6,6 +6,7 @@ import cors from "cors";
 
 import otp from './routes/otp.router.js'
 import manageServiceRouter from "./routes/adminManageService.routes.js";
+import addOnsRouter from "./routes/addOns.routes.js";
 
 app.use(
   cors({
@@ -28,6 +29,7 @@ app.use(
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/otp", otp);
 app.use("/api/v1/admin", manageServiceRouter);
+app.use("/api/v1/admin/addons", addOnsRouter);
 app.use("/api/v1/booking", bookingRouter);
 
 // Default route for unhandled paths
@@ -36,6 +38,14 @@ app.all("*", (req, res) => {
     status: "Fail",
     message: "Route not found",
   });
+});
+
+
+// app.use("/", (req, res) => {
+   res.json({
+     status: "success",
+    message: "Welcome to the API",
+});
 });
 
 // Error-handling middleware
@@ -47,5 +57,6 @@ app.use((err, req, res, next) => {
     error: err.message,
   });
 });
+
 
 export { app };
