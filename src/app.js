@@ -27,7 +27,7 @@ app.use(
 
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/otp", otp);
-app.use("/api/v1/admin", serviceRouter);
+app.use("/api/v1/admin", manageServiceRouter);
 app.use("/api/v1/booking", bookingRouter);
 
 // Default route for unhandled paths
