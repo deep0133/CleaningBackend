@@ -87,19 +87,11 @@ if(user){
     }
 
     return res.status(200).json(
-      new ApiResponse(200, { createdUser, accessToken, refreshToken }, "User registered successfully")
+      new ApiResponse(200, { createdUser, accessToken, refreshToken }, " otp is verfied and User registered successfully")
     );
   }
 
-  // OTP verified response
-  res.status(200).json(
-    new ApiResponse(200, { 
-      createdUser ,
-      refreshToken,
-      accessToken
 
-    }, "OTP verified successfully and user is now verified.")
-  );
 });
 
 
