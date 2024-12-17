@@ -3,9 +3,9 @@ const app = express();
 import userRouter from "./routes/user.router.js";
 import bookingRouter from "./routes/booking.routes.js";
 import cors from "cors";
-import serviceRouter from "./routes/service.routes.js";
 
-import otp from "./routes/otp.router.js";
+import otp from './routes/otp.router.js'
+import manageServiceRouter from "./routes/adminManageService.routes.js";
 
 app.use(
   cors({

@@ -1,4 +1,6 @@
 import ServiceModel from "../../models/Services/services.model.js";
+import { validationResult } from "express-validator";
+
 
 const getCleaningServices = async (req, res) => {
   try {
@@ -16,19 +18,41 @@ const getCleaningServices = async (req, res) => {
 };
 
 const createCleaningService = async (req, res) => {
+  // Input validation using express-validator
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  
+  let imgFileName=`${req.file.filename}`
   try {
-    const { services } = req.body;
-    const newService = new ServiceModel(services);
+    const { name, description, pricePerHour, addOns } = req.body;
+
+    // Additional manual validation for required fields
+    if (!name || !pricePerHour) {
+      return res.status(400).json({ message: "Name and pricePerHour are required" });
+    }
+
+    // Creating a new service instance
+    const newService = new ServiceModel({
+      name,
+      description,
+      pricePerHour,
+      image:imgFileName,
+      addOns,
+    });
+
+    // Save to database
     await newService.save();
+
+    // Return success response
     res.status(201).json({
       message: "Cleaning service created successfully",
       data: newService,
     });
   } catch (error) {
-    res.status(500).json({
-      message: "Error creating cleaning service",
-      error: error.message,
-    });
+    console.error(error);
+    res.status(500).json({ message: "Error creating cleaning service", error });
   }
 };
 
@@ -75,9 +99,4 @@ const deleteCleaningService = async (req, res) => {
   }
 };
 
-export {
-  getCleaningServices,
-  createCleaningService,
-  updateCleaningService,
-  deleteCleaningService,
-};
+export {createCleaningService,deleteCleaningService,updateCleaningService,getCleaningServices}
