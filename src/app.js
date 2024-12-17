@@ -3,6 +3,7 @@ const app = express();
 import userRouter from "./routes/user.router.js";
 import bookingRouter from "./routes/booking.routes.js";
 import cors from "cors";
+import serviceRouter from "./routes/service.routes.js";
 
 import otp from './routes/otp.router.js'
 
@@ -21,15 +22,10 @@ app.use(express.urlencoded({
     extended:true
 }))
 
-
-
-
-
-
 app.use("/api/v1/users",userRouter);
 app.use("/api/v1/otp",otp)
+app.use("/api/v1/admin", serviceRouter);
 app.use("/api/v1/booking", bookingRouter);
-
 
 app.use("/", (req, res) => {
   res.json({
@@ -37,11 +33,6 @@ app.use("/", (req, res) => {
     message: "Welcome to the API",
   });
 });
-app.use("/api", (req, res) => {
-  res.json({
-    status: "success",
-    message: "Welcome to the new made API",
-  });
-});
+
 export { app };
 

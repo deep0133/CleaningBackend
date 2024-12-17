@@ -1,21 +1,38 @@
-import ServiceModel from "../models/Services/services.model.js";
+import ServiceModel from "../../models/Services/services.model.js";
 
-createCleaningService = async (req, res) => {
+const getCleaningServices = async (req, res) => {
+  try {
+    const services = await ServiceModel.find();
+    res.status(200).json({
+      message: "Cleaning services retrieved successfully",
+      data: services,
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Error retrieving cleaning services", error });
+  }
+};
+
+const createCleaningService = async (req, res) => {
   try {
     const { services } = req.body;
-    const newService = new ServiceModel({ services });
+    const newService = new ServiceModel(services);
     await newService.save();
     res.status(201).json({
       message: "Cleaning service created successfully",
       data: newService,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error creating cleaning service", error });
+    res.status(500).json({
+      message: "Error creating cleaning service",
+      error: error.message,
+    });
   }
 };
 
-updateCleaningService = async (req, res) => {
+const updateCleaningService = async (req, res) => {
   try {
     const { id } = req.params;
     const { services } = req.body;
@@ -39,7 +56,7 @@ updateCleaningService = async (req, res) => {
   }
 };
 
-deleteCleaningService = async (req, res) => {
+const deleteCleaningService = async (req, res) => {
   try {
     const { id } = req.params;
     const deletedService = await ServiceModel.findByIdAndDelete(id);
@@ -56,4 +73,11 @@ deleteCleaningService = async (req, res) => {
     console.error(error);
     res.status(500).json({ message: "Error deleting cleaning service", error });
   }
+};
+
+export {
+  getCleaningServices,
+  createCleaningService,
+  updateCleaningService,
+  deleteCleaningService,
 };

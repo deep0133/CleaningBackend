@@ -7,19 +7,12 @@ import { Contact } from "../../models/contactSchema.js";
 import twilio from "twilio"; // Twilio for SMS
 import { sendOtp,verifyOtp } from "../../utils/opt.js";
 
-
-
-
-
-
 const verifyOtpController = asyncHandler(async (req, res) => {
   const { name, email, phoneNumber, password, role, address, category, otp } = req.body;
 
   if (!phoneNumber || !otp) {
     throw new ApiError(400, "Phone number and OTP are required");
   }
-
-
 
   // Verify OTP
   const verificationResponse = await verifyOtp(phoneNumber, otp);
@@ -343,6 +336,11 @@ const myProfile = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, user });
 });
 
+const allUsers = asyncHandler(async (req, res) => {
+  const user = await User.find();
+  res.status(200).json({ success: true, user });
+});
+
 const updateProfile = asyncHandler(async (req, res) => {
   const { name, email, phoneNumber, address } = req.body;
 
@@ -522,6 +520,7 @@ const resetPassowrd = asyncHandler(async (req, res, next) => {
 
 export {
   myProfile,
+  allUsers,
   register,
   login,
   logout,

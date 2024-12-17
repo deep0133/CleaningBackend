@@ -1,12 +1,16 @@
 import mongoose from "mongoose";
-import AddOnSchema from "./addons.model.js";
 
 const ServiceSchema = new mongoose.Schema({
-  name: { type: String, required: true },
+  name: { type: String, required: true, unique: true },
   description: { type: String }, // Optional description
   pricePerHour: { type: Number, required: true }, // Price in smallest currency unit
   image: { type: String }, // URL for the service icon/image
-  addOns: [AddOnSchema], // Array of add-ons
+  addOns: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "AddOns", // Reference to the AddOn model
+    },
+  ], // Array of add-ons
 });
 const ServiceModel = mongoose.model("Services", ServiceSchema);
 export default ServiceModel;

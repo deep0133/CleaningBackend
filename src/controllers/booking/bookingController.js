@@ -17,6 +17,7 @@ const createBookingRequestData = {
     type: "Point",
     coordinates: [77.1025, 28.7041], // longitude, latitude
   },
+  addOns: ["addOnId", "...."], // Array of add-ons selected by the user
 };
 
 export const createBooking = asyncHandler(async (req, res) => {
@@ -122,16 +123,13 @@ export const createBooking = asyncHandler(async (req, res) => {
     // Save booking to the database within a transaction
     await booking.save({ session });
 
-  
-
     // Createig Order
- 
     const paymentIntent = await Stripe.paymentIntents.create({
       amount: totalPrice,
       currency: "INR",
       metadata: {
-        orderId: order._id.toString()
-      }
+        orderId: booking._id.toString(),
+      },
     });
 
     // Commit the transaction
@@ -143,10 +141,10 @@ export const createBooking = asyncHandler(async (req, res) => {
       success: true,
       booking,
       clientSecret: paymentIntent.client_secret,
-      orderId: order._id
+      bookingId: booking._id,
     });
 
-        // Step 5: Razorpay order creation if paymentMethod is "online"
+    // Step 5: Razorpay order creation if paymentMethod is "online"
     // let razorpayOrder = null;
 
     // if (paymentMethod === "online") {
@@ -163,7 +161,6 @@ export const createBooking = asyncHandler(async (req, res) => {
     // }
 
     // Stipe begins here
-
   } catch (error) {
     // Abort the transaction in case of failure
     await session.abortTransaction();
