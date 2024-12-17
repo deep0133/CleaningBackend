@@ -401,3 +401,68 @@ export const endService = asyncHandler(async (req, res) => {
 
   res.status(200).json({ success: true, booking });
 });
+
+// Get Users Booking
+export const getUserBookings = asyncHandler(async (req, res) => {
+  const bookings = await BookingService.find({ User: req.user._id });
+
+  res.status(200).json({ success: true, bookings });
+});
+
+// Get Cleaner Bookings
+export const getCleanerBookings = asyncHandler(async (req, res) => {
+  const bookings = await BookingService.find({
+    Cleaner: req.user._id,
+  }).populate("User");
+
+  res.status(200).json({ success: true, bookings });
+});
+
+// Get Booking By ID
+export const getBookingById = asyncHandler(async (req, res) => {
+  const booking = await BookingService.findById(req.params.id)
+    .populate("User")
+    .populate("Cleaner");
+
+  if (!booking) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Booking not found" });
+  }
+
+  res.status(200).json({ success: true, booking });
+});
+
+// Get All Upcomming Bookings :
+export const getAllUpcomingBookings = asyncHandler(async (req, res) => {
+  const bookings = await BookingService.find({
+    "TimeSlot.start": { $gt: new Date() },
+  })
+    .populate("User")
+    .populate("Cleaner");
+
+  res.status(200).json({ success: true, bookings });
+});
+
+// Get All Past Bookings :
+export const getAllPastBookings = asyncHandler(async (req, res) => {
+  const bookings = await BookingService.find({
+    "TimeSlot.end": { $lt: new Date() },
+  })
+    .populate("User")
+    .populate("Cleaner");
+
+  res.status(200).json({ success: true, bookings });
+});
+
+// Get Current Bookings :
+export const getCurrentBookings = asyncHandler(async (req, res) => {
+  const bookings = await BookingService.find({
+    "TimeSlot.start": { $lte: new Date() },
+    "TimeSlot.end": { $gte: new Date() },
+  })
+    .populate("User")
+    .populate("Cleaner");
+
+  res.status(200).json({ success: true, bookings });
+});
