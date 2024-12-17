@@ -11,6 +11,7 @@ import {
   updateAddress,
   myProfile,
   addNewAddress,
+  allUsers,
 } from "../controllers/user/user.controller.js";
 import { isAdmin, isAuthenticated } from "../middleware/authenticateUser.js";
 const router = Router();
@@ -22,6 +23,7 @@ router.post("/login", login);
 router.post("/logout", isAuthenticated, logout);
 
 router.get("/me", isAuthenticated, myProfile);
+router.get("/all", allUsers);
 
 // Update Routes
 router.post("/add/address", isAuthenticated, addNewAddress);

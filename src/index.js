@@ -11,30 +11,10 @@ dotenv.config({
   path: "./.env",
 });
 
-const io = new Server(server, {
+export const io = new Server(server, {
   cors: {
     origin: "*",
   },
-});
-
-io.on("connection", (socket) => {
-  console.log("A user connected");
-
-  // When a cleaner is notified
-  socket.on("sendNotification", (cleanerId, bookingDetails) => {
-    // Emit event to the cleaner's socket ID
-    console.log("-------check socket---");
-    io.to(cleanerId).emit("newBooking", bookingDetails);
-  });
-
-  // Handle disconnection
-  socket.on("disconnect", () => {
-    console.log("A user disconnected");
-  });
-});
-
-io.on("connection_error", (err) => {
-  console.error("Socket connection error:", err.message);
 });
 
 connectDB()

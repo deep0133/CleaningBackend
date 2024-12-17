@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 const SECRET_KEY = process.env.ACCESS_TOKEN_SECERET;
 
 function isAuthenticated(req, res, next) {
-  const authorization = req.headers.authori zation;
+  const authorization = req.headers.authorization;
   if (!authorization) {
     return res.status(401).json({
       message: "No Authorization Header",

@@ -14,6 +14,7 @@ const twilioPhone = process.env.TWILIO_PHONE_NUMBER;
 // const client = twilio(accountSid, authToken);
 
 const register = asyncHandler(async (req, res) => {
+  console.log("------------In Reg API-------------");
   // take name email password , address , role ,phone number from the user
   //check validations
   // check user already exists or not
@@ -162,6 +163,11 @@ const logout = asyncHandler(async (req, res) => {
 });
 const myProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
+  res.status(200).json({ success: true, user });
+});
+
+const allUsers = asyncHandler(async (req, res) => {
+  const user = await User.find();
   res.status(200).json({ success: true, user });
 });
 
@@ -373,6 +379,7 @@ const resetPassowrd = asyncHandler(async (req, res, next) => {
 
 export {
   myProfile,
+  allUsers,
   register,
   login,
   logout,
