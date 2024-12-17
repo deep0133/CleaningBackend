@@ -1,0 +1,5 @@
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_stripe: ^9.0.0+1
+  http: ^1.1.0
