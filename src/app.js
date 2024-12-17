@@ -3,9 +3,9 @@ const app = express();
 import userRouter from "./routes/user.router.js";
 import bookingRouter from "./routes/booking.routes.js";
 import cors from "cors";
-import serviceRouter from "./routes/service.routes.js";
 
 import otp from './routes/otp.router.js'
+import manageServiceRouter from "./routes/adminManageService.routes.js";
 
 
 app.use(cors({
@@ -24,8 +24,9 @@ app.use(express.urlencoded({
 
 app.use("/api/v1/users",userRouter);
 app.use("/api/v1/otp",otp)
-app.use("/api/v1/admin", serviceRouter);
+app.use("/api/v1/admin", manageServiceRouter);
 app.use("/api/v1/booking", bookingRouter);
+
 
 app.use("/", (req, res) => {
   res.json({
