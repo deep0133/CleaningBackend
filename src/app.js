@@ -35,5 +35,11 @@ app.use("/", (req, res) => {
     message: "Welcome to the API",
   });
 });
+app.use("/api", (req, res) => {
+  res.json({
+    status: "success",
+    message: "Welcome to the new made API",
+  });
+});
 export { app };
 
