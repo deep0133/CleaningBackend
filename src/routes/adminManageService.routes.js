@@ -1,11 +1,12 @@
 import express from "express";
 import { multerUpload } from "../utils/multer.js";
 
-import { createCleaningService,deleteCleaningService,updateCleaningService} from "../controllers/cleaner/cleaning.controllers.js";
+import { createCleaningService,deleteCleaningService,updateCleaningService,getCleaningServices} from "../controllers/cleaner/cleaning.controllers.js";
 
 const manageServiceRouter = express.Router();
 
 manageServiceRouter.post("/create",multerUpload.single('image'),createCleaningService);
+manageServiceRouter.post("/list-srvices",getCleaningServices);
 
 manageServiceRouter.put("/update/:id",multerUpload.single('image'), updateCleaningService);
 
