@@ -99,6 +99,4 @@ const deleteCleaningService = async (req, res) => {
   }
 };
 
-
-
 export {createCleaningService,deleteCleaningService,updateCleaningService,getCleaningServices}
