@@ -16,9 +16,11 @@ const verifyOtpController = asyncHandler(async (req, res) => {
 
   // Verify OTP
   const verificationResponse = await verifyOtp(phoneNumber, otp);
-  console.log("verficationResponse...//./././../......",verificationResponse)
+
+
   if (!verificationResponse.success) {
-    throw new ApiError(401, verificationResponse.message);
+
+    throw new ApiError(401, verificationResponse);
   }
 
   let user = await User.findOne({ phoneNumber });
@@ -28,7 +30,7 @@ if(user){
 
   // If additional registration details are provided
   if (verificationResponse.success === true) {
-    console.log("userInfo", req.body);
+   
 
     if (
       [name, email, password, role, phoneNumber].some(
@@ -79,7 +81,7 @@ if(user){
     await user.save({ validateBeforeSave: false });
 
     const createdUser = await User.findById(user._id).select(
-      "-password -refreshToken"
+      "-password -refreshToken -accessToken"
     );
 
     if (!createdUser) {
@@ -87,7 +89,7 @@ if(user){
     }
 
     return res.status(200).json(
-      new ApiResponse(200, { createdUser, accessToken, refreshToken }, " otp is verfied and User registered successfully")
+      new ApiResponse(200, {  accessToken, refreshToken }, " otp is verfied and User registered successfully")
     );
   }
 
@@ -232,7 +234,7 @@ const register = asyncHandler (async(req,res)=>{
     if (phoneNumber) {
       try {
         const otpRequest = await sendOtp(phoneNumber);
-        console.log("OTP Request Response:....................", otpRequest);
+        console.log("OTP Request Response:....................", otpRequest.success);
   
         if (!otpRequest.success) {
           throw new ApiError(401, otpRequest.message || "Sending OTP failed");
@@ -265,8 +267,8 @@ const login = asyncHandler(async (req, res) => {
 
   const { phoneNumber, password } = req.body;
 
-  if (!phoneNumber) {
-    throw new ApiError(400, "email or phone number is required");
+  if (!phoneNumber && !password) {
+    throw new ApiError(400, "password or phone number is required");
   }
   // check if the user exists or not
 
@@ -302,11 +304,11 @@ const login = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
-        user: loggingInfo,
+      
         accessToken,
         refreshToken,
       },
-      "user info is correct do further verification"
+      "user logged in successfully"
     )
   );
 });

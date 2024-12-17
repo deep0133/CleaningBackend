@@ -6,6 +6,7 @@ import twilio from 'twilio';
 const accountSid = process.env.TWILIO_ACCOUNT_SID; 
 const authToken = process.env.TWILIO_AUTH_TOKEN;  
 const serviceSid = process.env.TWILIO_SERVICE_SID; 
+console.log()
 
 // Verify Service SID
 const client = twilio(accountSid, authToken);
@@ -25,17 +26,17 @@ async function sendOtp(phoneNumber) {
 
     if (verification.status === 'canceled') {
       return {
-        success: false,
-        message: `Failed to send OTP. Status: ${verification.status}`,
+   
+        message: `Failed to send OTP. Status: ${verification.valid}`,
       };
     } else if (verification.status === 'approved') {
       return {
-        success: true,
+           
         message: "OTP sent and already approved.",
       };
     } else if (verification.status === 'pending') {
       
-            
+            message:`pendingStatus${verification.valid}`
     } else {
       return {
         success: false,
@@ -43,9 +44,9 @@ async function sendOtp(phoneNumber) {
       };
     }
   } catch (error) {
-    console.error('Error sending OTP:', error);
+    console.error('Error sending OTP:', error.message);
     return {
-      success: false,
+      
       message: `Error sending OTP: ${error.message || "Unknown error"}`,
     };
   }
@@ -72,7 +73,7 @@ async function verifyOtp(phoneNumber, otpCode) {
         code: otpCode,
       });
 
-   
+ 
 
     // Check if verification was successful
     if (verificationCheck.status === 'approved') {
@@ -87,10 +88,12 @@ async function verifyOtp(phoneNumber, otpCode) {
         message: "OTP verification failed",
       };
     }
+    console.log("......................./................",verificationCheck)
+    return verificationCheck;
   } catch (error) {
     // Enhanced error handling with full error message
-    console.error('Error verifying OTP:', error);
-    throw new Error(`Failed to verify OTP. ${error.message || error}`);
+    console.error('Error verifying OTP:', error.message);
+    return (`Failed to verify OTP. ${error.message || error}`);
   }
 }
 
