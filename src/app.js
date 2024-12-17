@@ -3,22 +3,22 @@ const app = express();
 import userRouter from "./routes/user.router.js";
 import bookingRouter from "./routes/booking.routes.js";
 import cors from "cors";
+import userRouter from './routes/user.router.js'
+import otp from './routes/otp.router.js'
 
-app.use(express.json({ limit: "16kb" }));
-app.use(express.static("public"));
-app.use(
-  express.urlencoded({
-    limit: "16kb",
-    extended: true,
-  })
-);
 
-app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN,
-    Credential: true,
-  })
-);
+app.use(cors({
+    origin:process.env.CORS_ORIGIN,
+    Credential:true
+}))
+
+app.use(express.json());
+
+app.use(express.urlencoded({
+    limit:"16kb",
+    extended:true
+}))
+
 
 app.use("/", (req, res) => {
   res.json({
@@ -26,7 +26,12 @@ app.use("/", (req, res) => {
     message: "Welcome to the API",
   });
 });
-app.use("/api/v1/users", userRouter);
+
+
+
+app.use("/api/v1/users",userRouter);
+app.use("/api/v1/otp",otp)
 app.use("/api/v1/booking", bookingRouter);
 
 export { app };
+
