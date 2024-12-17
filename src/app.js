@@ -14,6 +14,8 @@ app.use(cors({
 
 app.use(express.json());
 
+app.use('/images',express.static('uploads'))
+
 app.use(express.urlencoded({
     limit:"16kb",
     extended:true
