@@ -107,4 +107,3 @@ export {
 };
 
 
-export {createCleaningService,deleteCleaningService,updateCleaningService}
