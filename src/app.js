@@ -5,24 +5,34 @@ import bookingRouter from "./routes/booking.routes.js";
 import cors from "cors";
 import serviceRouter from "./routes/service.routes.js";
 
-app.use(express.json({ limit: "16kb" }));
-app.use(express.static("public"));
-app.use(
-  express.urlencoded({
-    limit: "16kb",
-    extended: true,
-  })
-);
+import otp from './routes/otp.router.js'
 
-app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN,
-    Credential: true,
-  })
-);
 
-app.use("/api/v1/users", userRouter);
+app.use(cors({
+    origin:process.env.CORS_ORIGIN,
+    Credential:true
+}))
+
+app.use(express.json());
+
+app.use('/images',express.static('uploads'))
+
+app.use(express.urlencoded({
+    limit:"16kb",
+    extended:true
+}))
+
+app.use("/api/v1/users",userRouter);
+app.use("/api/v1/otp",otp)
 app.use("/api/v1/admin", serviceRouter);
 app.use("/api/v1/booking", bookingRouter);
 
+app.use("/", (req, res) => {
+  res.json({
+    status: "success",
+    message: "Welcome to the API",
+  });
+});
+
 export { app };
+

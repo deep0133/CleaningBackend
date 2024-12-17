@@ -50,18 +50,18 @@ export const userSchema = new Schema(
         type: [Number],
       },
     },
+
     accessToken: {
       type: String,
     },
     refreshToken: {
       type: String,
     },
-    otp: {
-      type: String,
-    },
-    otpExpiry: {
-      type: Date,
-    },
+    isVerified:{
+      type:Boolean,
+      default:false
+    }
+    
   },
   {
     timestamps: true,

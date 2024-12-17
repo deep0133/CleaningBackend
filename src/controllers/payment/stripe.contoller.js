@@ -4,6 +4,7 @@ import userModel from '../models/user.model.js'
 import Stripe from "stripe"
 
 
+
 const stripe=new Stripe(process.env.STRIPE_SERCRET_KEY)
 
 
@@ -51,16 +52,32 @@ export const createBooking = asyncHandler(async (req, res) => {
       location, // { type: "Point", coordinates: [longitude, latitude] }
       addOns = [], // Array of add-ons selected by the user
     } = req.body;
-  
-    const duration = Math.round(
-      (new Date(timeSlot.end) - new Date(timeSlot.start)) / (1000 * 60)
-    );
-  
-    const totalPrice = calculateTotalPrice(category, addOns, duration); // Replace with your pricing logic
-  
-    const session = await mongoose.startSession();
-    session.startTransaction();
-  
+
+    // -----stripe starts here---
+
+    const priceData = {
+      currency: productRequest.currency || 'USD',
+      unit_amount: productRequest.amount,
+      product_data: productData,
+    };
+
+    const lineItem = {
+      price_data: priceData,
+      quantity:1,
+    };
+
+    const params = {
+      payment_method_types: ['card'], // Payment methods
+      mode: 'payment',
+      success_url: 'http://localhost:8080/success', // Adjust the URLs as needed
+      cancel_url: 'http://localhost:8080/cancel',
+      line_items: [lineItem],
+    };
+
+    const session = await stripe.checkout.sessions.create(params);
+
+    // Saving data to database
+
     try {
       const booking = new BookingService({
         User: req.user._id,
@@ -81,30 +98,47 @@ export const createBooking = asyncHandler(async (req, res) => {
       });
   
       await booking.save({ session });
+
+      const duration = Math.round(
+        (new Date(timeSlot.end) - new Date(timeSlot.start)) / (1000 * 60)
+      );
+      const totalPrice = calculateTotalPrice(category, addOns, duration); // Replace with your pricing logic
+
+    return {
+      status: 'SUCCESS',
+      message: 'Payment session created successfully',
+      sessionId: session.id,
+      sessionUrl: session.url,
+    };
+    // Stripe ends here
+    // const session = await mongoose.startSession();
+    // session.startTransaction();
   
-      const order = await Order.create({
-        items: addOns,
-        totalAmount: totalPrice,
-        status: 'pending',
-        user: req.user._id,
-        createdAt: new Date(),
-      });
+   
   
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: totalPrice * 100,
-        currency: "INR",
-        metadata: {
-          orderId: order._id.toString(),
-        },
-      });
+    //   const order = await Order.create({
+    //     items: addOns,
+    //     totalAmount: totalPrice,
+    //     status: 'pending',
+    //     user: req.user._id,
+    //     createdAt: new Date(),
+    //   });
   
-      await session.commitTransaction();
-      res.status(201).json({
-        success: true,
-        booking,
-        clientSecret: paymentIntent.client_secret,
-        orderId: order._id,
-      });
+    //   const paymentIntent = await stripe.paymentIntents.create({
+    //     amount: totalPrice * 100,
+    //     currency: "INR",
+    //     metadata: {
+    //       orderId: order._id.toString(),
+    //     },
+    //   });
+  
+    //   await session.commitTransaction();
+    //   res.status(201).json({
+    //     success: true,
+    //     booking,
+    //     clientSecret: paymentIntent.client_secret,
+    //     orderId: order._id,
+    //   });
     } catch (error) {
       await session.abortTransaction();
       res.status(500).json({
