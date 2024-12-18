@@ -325,7 +325,8 @@ const logout = asyncHandler(async (req, res) => {
   res.json(new ApiResponse(200, {}, "User logged out successfully"));
 });
 const myProfile = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id);
+  const user = await User.findById(req.user._id).select("-password -accessToken -refreshToken -location ");
+
   console.log("user/........",user);
   res.status(200).json({ success: true, user });
 });
