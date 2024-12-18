@@ -19,7 +19,7 @@ function isAuthenticated(req, res, next) {
       ? authorization.split("Bearer ")[1]
       : null;
 
-      console.log("token.....",token)
+ 
 
 
 
@@ -32,7 +32,7 @@ function isAuthenticated(req, res, next) {
     }
 
     const decoded = jwt.verify(token, SECRET_KEY);
-    console.log("decoded.......",decoded)
+  
     req.user = decoded; 
     // console.log("decoded.......",req.user);
     next(); 

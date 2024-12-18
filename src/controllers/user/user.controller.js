@@ -112,14 +112,14 @@ if(user){
 //   req.body;
 
 
-//     // let otpRequest = null;
+//     // let status = null;
 //     // if (phoneNumber) {
 //     //   try {
-//     //     otpRequest = await sendOtp(phoneNumber);
-//     //     console.log("OTP Request Response:", otpRequest);
+//     //     status = await sendOtp(phoneNumber);
+//     //     console.log("OTP Request Response:", status);
   
-//     //     if (!otpRequest.success) {
-//     //       throw new ApiError(401, otpRequest.message || "Sending OTP failed");
+//     //     if (!status.success) {
+//     //       throw new ApiError(401, status.message || "Sending OTP failed");
 //     //     }
 //     //   } catch (error) {
 //     //     console.error("Error sending OTP:", error.message || error);
@@ -220,43 +220,39 @@ if(user){
 // });
 
 
-const register = asyncHandler (async(req,res)=>{
-  const {phoneNumber}  = req.body;
-  if(!phoneNumber){
-    throw new ApiError(401,"invalid phoneNumber")
+const register = asyncHandler(async (req, res) => {
+  const { phoneNumber } = req.body;
+
+  if (!phoneNumber) {
+    throw new ApiError(401, "Invalid phone number");
   }
 
-  const user = await User.findOne({phoneNumber});
-  if(user){
-    throw new ApiError(401,"user with this number already exists")
+  const user = await User.findOne({ phoneNumber });
+  if (user) {
+    throw new ApiError(401, "User with this number already exists");
   }
 
-    if (phoneNumber) {
-      try {
-        const otpRequest = await sendOtp(phoneNumber);
-        console.log("OTP Request Response:....................", otpRequest.success);
-  
-        if (!otpRequest.success) {
-          throw new ApiError(401, otpRequest.message || "Sending OTP failed");
-        }
-      } catch (error) {
-        console.error("Error sending OTP:", error.message || error);
-        throw new ApiError(500, "Failed to send OTP");
+
+
+  if (phoneNumber) {
+    try {
+    const  currentStatus = await sendOtp(phoneNumber); 
+
+      if (!currentStatus) {
+        throw new ApiError(401, "Failed to send OTP");
       }
+    } catch (error) {
+      console.error("Error sending OTP:", error.message || error);
+      throw new ApiError(500, "Failed to send OTP");
     }
+  }
 
-    res.status(200).json(
-          new ApiResponse(
-            200,
-            {
-            otpRequest
-          
-            },
-            "do further verfication"
-          )
-        );
-    
-})
+
+  res.status(200).json(
+    new ApiResponse( 200,{},"OTP sent successfully Do OTP verification" ,true)
+  );
+});
+
 
 
 

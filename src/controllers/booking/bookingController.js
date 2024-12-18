@@ -64,7 +64,7 @@ export const createBooking = asyncHandler(async (req, res) => {
        
   // Step 1: Fetch the service based on category
   const service = await ServiceModel.findOne({ name: category });
-
+console.log("service ..................",service);
   if (!service) {
     return res.status(404).json({
       success: false,
