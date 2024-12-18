@@ -2,10 +2,11 @@ import { BookingService } from "../../models/Client/booking.model.js";
 import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import ServiceModel from '../../models/Services/services.model.js'
+
 import crypto from "crypto";
 
 const createBookingRequestData = {
-  category: "basic cleaning",// where to add service
+  category: "basic cleaning",
   timeSlot: {
     start: "2024-12-06T10:00:00.000Z",
     end: "2024-12-06T12:00:00.000Z",
@@ -15,7 +16,7 @@ const createBookingRequestData = {
   userAddress: "1234 Elm Street",
   location: {
     type: "Point",
-    coordinates: [77.1025, 28.7041], // longitude, latitude
+    coordinates: [77.1025, 28.7041], 
   },
 };
 
@@ -92,6 +93,7 @@ export const createBooking = asyncHandler(async (req, res) => {
   } = req.body;
 
   // Validate input
+  
   if (!category || !timeSlot || !paymentMethod || !userAddress || !location) {
     return res.status(400).json({
       success: false,

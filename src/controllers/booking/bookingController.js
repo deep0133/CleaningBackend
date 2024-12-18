@@ -1,6 +1,7 @@
 import { BookingService } from "../../models/Client/booking.model.js";
 import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import ServiceModel from "../../models/Services/services.model.js";
 import crypto from "crypto";
 import Stripe from "stripe";
 
@@ -28,10 +29,10 @@ export const createBooking = asyncHandler(async (req, res) => {
     paymentValue,
     userAddress,
     location, // { type: "Point", coordinates: [longitude, latitude] }
-    addOns = [], // Array of add-ons selected by the user
+    addOns = [], 
   } = req.body;
 
-  // Validate input
+  // Validate inputF
   if (!category || !timeSlot || !paymentMethod || !userAddress || !location) {
     return res.status(400).json({
       success: false,
@@ -59,7 +60,8 @@ export const createBooking = asyncHandler(async (req, res) => {
       message: "Payment value must be greater than zero",
     });
   }
-
+  
+       
   // Step 1: Fetch the service based on category
   const service = await ServiceModel.findOne({ name: category });
 
@@ -123,7 +125,7 @@ export const createBooking = asyncHandler(async (req, res) => {
     // Save booking to the database within a transaction
     await booking.save({ session });
 
-    // Createig Order
+    // Createig Orderp
     const paymentIntent = await Stripe.paymentIntents.create({
       amount: totalPrice,
       currency: "INR",
