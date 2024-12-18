@@ -1,6 +1,6 @@
 import express from "express";
 const app = express();
-import userRouter from "./routes/user.router.js";
+import userRouter from "./routes/user.routes.js";
 import bookingRouter from "./routes/booking.routes.js";
 import cors from "cors";
 
@@ -41,7 +41,7 @@ app.all("*", (req, res) => {
 });
 
 
-// app.use("/", (req, res) => {
+app.use("/", (req, res) => {
    res.json({
      status: "success",
     message: "Welcome to the API",
