@@ -21,7 +21,7 @@ const storage = new CloudinaryStorage({
 });
 
 // Create multer upload middleware
-const multerUpload = multer({ 
+export const multerUpload = multer({ 
   storage: storage,
   fileFilter: (req, file, cb) => {
     // Check file type
@@ -36,4 +36,3 @@ const multerUpload = multer({
   }
 });
 
-module.exports = multerUpload;
