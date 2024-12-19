@@ -25,6 +25,7 @@ const createCleaningService = async (req, res) => {
   }
   
   let imgFileName=`${req.file.filename}`
+
   try {
     const { name, description, pricePerHour, addOns } = req.body;
 

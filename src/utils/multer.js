@@ -21,7 +21,10 @@ const storage = new CloudinaryStorage({
 });
 
 // Create multer upload middleware
+
+
 export const multerUpload = multer({ 
+
   storage: storage,
   fileFilter: (req, file, cb) => {
     // Check file type
@@ -35,4 +38,5 @@ export const multerUpload = multer({
     fileSize: 5 * 1024 * 1024 // 5MB limit
   }
 });
+
 
