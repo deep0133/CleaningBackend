@@ -16,9 +16,11 @@ const verifyOtpController = asyncHandler(async (req, res) => {
 
   // Verify OTP
   const verificationResponse = await verifyOtp(phoneNumber, otp);
-  console.log("verficationResponse...//./././../......",verificationResponse)
+
+
   if (!verificationResponse.success) {
-    throw new ApiError(401, verificationResponse.message);
+
+    throw new ApiError(401, verificationResponse);
   }
 
   let user = await User.findOne({ phoneNumber });
@@ -28,7 +30,7 @@ if(user){
 
   // If additional registration details are provided
   if (verificationResponse.success === true) {
-    console.log("userInfo", req.body);
+   
 
     if (
       [name, email, password, role, phoneNumber].some(
@@ -79,7 +81,7 @@ if(user){
     await user.save({ validateBeforeSave: false });
 
     const createdUser = await User.findById(user._id).select(
-      "-password -refreshToken"
+      "-password -refreshToken -accessToken"
     );
 
     if (!createdUser) {
@@ -87,7 +89,7 @@ if(user){
     }
 
     return res.status(200).json(
-      new ApiResponse(200, { createdUser, accessToken, refreshToken }, " otp is verfied and User registered successfully")
+      new ApiResponse(200, {  accessToken, refreshToken }, " otp is verfied and User registered successfully")
     );
   }
 
@@ -110,14 +112,14 @@ if(user){
 //   req.body;
 
 
-//     // let otpRequest = null;
+//     // let status = null;
 //     // if (phoneNumber) {
 //     //   try {
-//     //     otpRequest = await sendOtp(phoneNumber);
-//     //     console.log("OTP Request Response:", otpRequest);
+//     //     status = await sendOtp(phoneNumber);
+//     //     console.log("OTP Request Response:", status);
   
-//     //     if (!otpRequest.success) {
-//     //       throw new ApiError(401, otpRequest.message || "Sending OTP failed");
+//     //     if (!status.success) {
+//     //       throw new ApiError(401, status.message || "Sending OTP failed");
 //     //     }
 //     //   } catch (error) {
 //     //     console.error("Error sending OTP:", error.message || error);
@@ -218,43 +220,39 @@ if(user){
 // });
 
 
-const register = asyncHandler (async(req,res)=>{
-  const {phoneNumber}  = req.body;
-  if(!phoneNumber){
-    throw new ApiError(401,"invalid phoneNumber")
+const register = asyncHandler(async (req, res) => {
+  const { phoneNumber } = req.body;
+
+  if (!phoneNumber) {
+    throw new ApiError(401, "Invalid phone number");
   }
 
-  const user = await User.findOne({phoneNumber});
-  if(user){
-    throw new ApiError(401,"user with this number already exists")
+  const user = await User.findOne({ phoneNumber });
+  if (user) {
+    throw new ApiError(401, "User with this number already exists");
   }
 
-    if (phoneNumber) {
-      try {
-        const otpRequest = await sendOtp(phoneNumber);
-        console.log("OTP Request Response:....................", otpRequest);
-  
-        if (!otpRequest.success) {
-          throw new ApiError(401, otpRequest.message || "Sending OTP failed");
-        }
-      } catch (error) {
-        console.error("Error sending OTP:", error.message || error);
-        throw new ApiError(500, "Failed to send OTP");
+
+
+  if (phoneNumber) {
+    try {
+    const  currentStatus = await sendOtp(phoneNumber); 
+
+      if (!currentStatus) {
+        throw new ApiError(401, "Failed to send OTP");
       }
+    } catch (error) {
+      console.error("Error sending OTP:", error.message || error);
+      throw new ApiError(500, "Failed to send OTP");
     }
+  }
 
-    res.status(200).json(
-          new ApiResponse(
-            200,
-            {
-            otpRequest
-          
-            },
-            "do further verfication"
-          )
-        );
-    
-})
+
+  res.status(200).json(
+    new ApiResponse( 200,{},"OTP sent successfully Do OTP verification" ,true)
+  );
+});
+
 
 
 
@@ -265,8 +263,8 @@ const login = asyncHandler(async (req, res) => {
 
   const { phoneNumber, password } = req.body;
 
-  if (!phoneNumber) {
-    throw new ApiError(400, "email or phone number is required");
+  if (!phoneNumber && !password) {
+    throw new ApiError(400, "password or phone number is required");
   }
   // check if the user exists or not
 
@@ -302,11 +300,11 @@ const login = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
-        user: loggingInfo,
+      
         accessToken,
         refreshToken,
       },
-      "user info is correct do further verification"
+      "user logged in successfully"
     )
   );
 });
@@ -323,7 +321,8 @@ const logout = asyncHandler(async (req, res) => {
   res.json(new ApiResponse(200, {}, "User logged out successfully"));
 });
 const myProfile = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id);
+  const user = await User.findById(req.user._id).select("-password -accessToken -refreshToken -location ");
+
   console.log("user/........",user);
   res.status(200).json({ success: true, user });
 });

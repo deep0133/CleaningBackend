@@ -7,8 +7,9 @@ const ServiceSchema = new mongoose.Schema({
   image: { type: String }, // URL for the service icon/image
   addOns: [
     {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "AddOns", // Reference to the AddOn model
+      // type: mongoose.Schema.Types.ObjectId,
+      // ref: "AddOns",
+      type:String
     },
   ], // Array of add-ons
 });

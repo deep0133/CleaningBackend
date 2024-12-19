@@ -2,20 +2,20 @@ import ServiceModel from "../../models/Services/services.model.js";
 import { validationResult } from "express-validator";
 
 
-const getCleaningServices = async (req, res) => {
-  try {
-    const services = await ServiceModel.find();
-    res.status(200).json({
-      message: "Cleaning services retrieved successfully",
-      data: services,
-    });
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ message: "Error retrieving cleaning services", error });
-  }
-};
+  const getCleaningServices = async (req, res) => {
+    try {
+      const services = await ServiceModel.find();
+      res.status(200).json({
+        message: "Cleaning services retrieved successfully",
+        data: services,
+      });
+    } catch (error) {
+      console.error(error);
+      res
+        .status(500)
+        .json({ message: "Error retrieving cleaning services", error });
+    }
+  };
 
 const createCleaningService = async (req, res) => {
   // Input validation using express-validator
@@ -25,6 +25,7 @@ const createCleaningService = async (req, res) => {
   }
   
   let imgFileName=`${req.file.filename}`
+
   try {
     const { name, description, pricePerHour, addOns } = req.body;
 
