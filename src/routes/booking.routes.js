@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { isAuthenticated } from "../middleware/authenticateUser.js";
+import { isAdmin, isAuthenticated } from "../middleware/authenticateUser.js";
 import {
   acceptBooking,
   createBooking,
@@ -30,8 +30,18 @@ router.post("/getUserBookings", isAuthenticated, getUserBookings);
 router.post("/getCleanerBookings", isAuthenticated, getCleanerBookings);
 router.post("/getBookingById", isAuthenticated, getBookingById);
 
-router.post("/getAllUpcomingBookings", isAuthenticated, getAllUpcomingBookings);
-router.post("/getAllPastBookings", isAuthenticated, getAllPastBookings);
+router.post(
+  "/getAllUpcomingBookings",
+  isAuthenticated,
+  isAdmin,
+  getAllUpcomingBookings
+);
+router.post(
+  "/getAllPastBookings",
+  isAuthenticated,
+  isAdmin,
+  getAllPastBookings
+);
 router.post("/getCurrentBookings", isAuthenticated, getCurrentBookings);
 
 export default router;
