@@ -29,7 +29,7 @@ export const createBooking = asyncHandler(async (req, res) => {
     paymentValue,
     userAddress,
     location, // { type: "Point", coordinates: [longitude, latitude] }
-    addOns = [], 
+    addOns = [],
   } = req.body;
 
   // Validate inputF
@@ -60,11 +60,10 @@ export const createBooking = asyncHandler(async (req, res) => {
       message: "Payment value must be greater than zero",
     });
   }
-  
-       
+
   // Step 1: Fetch the service based on category
   const service = await ServiceModel.findOne({ name: category });
-console.log("service ..................",service);
+  console.log("service ..................", service);
   if (!service) {
     return res.status(404).json({
       success: false,
