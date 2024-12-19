@@ -146,23 +146,7 @@ console.log("service ..................",service);
       bookingId: booking._id,
     });
 
-    // Step 5: Razorpay order creation if paymentMethod is "online"
-    // let razorpayOrder = null;
-
-    // if (paymentMethod === "online") {
-    //   const amountInPaisa = totalPrice * 100; // Convert to paisa
-    //   razorpayOrder = await razorpay.orders.create({
-    //     amount: amountInPaisa,
-    //     currency: "INR",
-    //     receipt: `receipt_${booking._id}`, // Unique receipt for this booking
-    //   });
-
-    //   // Store the Razorpay order ID in the booking document
-    //   booking.razorpayOrderId = razorpayOrder.id;
-    //   await booking.save({ session }); // Save updated booking with Razorpay order ID
-    // }
-
-    // Stipe begins here
+    // Stipe END here
   } catch (error) {
     // Abort the transaction in case of failure
     await session.abortTransaction();

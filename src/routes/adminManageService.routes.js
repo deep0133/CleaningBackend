@@ -1,5 +1,5 @@
 import express from "express";
-import  multerUpload  from "../utils/multer.js";
+import  {multerUpload}  from "../utils/multer.js";
 
 import { createCleaningService,deleteCleaningService,updateCleaningService,getCleaningServices,} from "../controllers/cleaner/cleaning.controllers.js";
 
