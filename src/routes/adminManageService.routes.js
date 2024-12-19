@@ -6,6 +6,7 @@ import { createCleaningService,deleteCleaningService,updateCleaningService,getCl
 const manageServiceRouter = express.Router();
 
 manageServiceRouter.post("/create",multerUpload.single('image'),createCleaningService);
+
 manageServiceRouter.get("/list-srvices",getCleaningServices);
 
 manageServiceRouter.put("/update/:id",multerUpload.single('image'), updateCleaningService);

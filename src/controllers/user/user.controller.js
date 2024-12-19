@@ -451,10 +451,14 @@ const getAllContact = asyncHandler(async (req, res) => {
 
 // Enter Phone Number To Recieve OTP for reset password
 const forgotPassword = async (req, res) => {
-  const { phoneNumber } = req.body;
+  const { phoneNumber,password,otp } = req.body;
 
   try {
-    // Find user by phone number
+ 
+
+    if(!phoneNumber){
+      throw new ApiError(401,"phoneNumber is required");
+    }
     const user = await User.findOne({ phoneNumber });
 
     if (!user) {
@@ -463,22 +467,30 @@ const forgotPassword = async (req, res) => {
         .json({ message: "User with this phone number not found" });
     }
 
-    // Generate a 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  
+      const  currentStatus = await sendOtp(phoneNumber); 
+  
+        if (!currentStatus) {
+          throw new ApiError(401, "Failed to send OTP");
+        }
 
-    // Set OTP and expiry (5 minutes from now)
-    user.otp = otp;
-    user.otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+       if(currentStatus===true){
+        if(!otp){
+         throw new ApiError(401,"otp is required for verification") ;
+        }
+        const verificationResponse = await verifyOtp(phoneNumber, otp);
 
-    await user.save();
 
-    // Send OTP via SMS using Twilio
-    // await client.messages.create({
-    //   body: `Your OTP for password reset is: ${otp}`,
-    //   from: twilioPhone,
-    //   to: phoneNumber,
-    // });
+  if (!verificationResponse.success) {
 
+    throw new ApiError(401, verificationResponse);
+  }
+
+  
+       }
+         
+       
+       
     res
       .status(200)
       .json({ message: "OTP sent successfully to your mobile number" });

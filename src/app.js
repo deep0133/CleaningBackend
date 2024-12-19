@@ -4,7 +4,7 @@ import userRouter from "./routes/user.routes.js";
 import bookingRouter from "./routes/booking.routes.js";
 import cors from "cors";
 
-import otp from './routes/otp.router.js'
+import otpRouter from './routes/otp.router.js'
 import manageServiceRouter from "./routes/adminManageService.routes.js";
 import addOnsRouter from "./routes/addOns.routes.js";
 
@@ -27,10 +27,13 @@ app.use(
 );
 
 app.use("/api/v1/users", userRouter);
-app.use("/api/v1/otp", otp);
 app.use("/api/v1/admin", manageServiceRouter);
 app.use("/api/v1/admin/addons", addOnsRouter);
 app.use("/api/v1/booking", bookingRouter);
+app.use("/api/v1/opt/send", otpRouter);
+
+
+
 
 // Default route for unhandled paths
 app.all("*", (req, res) => {
@@ -42,10 +45,10 @@ app.all("*", (req, res) => {
 
 
 app.use("/", (req, res) => {
-   res.json({
-     status: "success",
+  res.json({
+    status: "success",
     message: "Welcome to the API",
-});
+  });
 });
 
 // Error-handling middleware

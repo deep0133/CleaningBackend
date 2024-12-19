@@ -287,7 +287,7 @@ export const verifyPayment = async (req, res) => {
 
       // 6. Send notification to each nearby cleaner
       nearbyCleaners.forEach((cleaner) => {
-        sendNotificationToCleaner(cleaner, booking); // Send notification to each cleaner
+        sendNotificaationToCleaner(cleaner, booking); // Send notification to each cleaner
       });
 
       // Send the response to the client

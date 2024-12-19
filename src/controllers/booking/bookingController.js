@@ -249,7 +249,6 @@ export const verifyPayment = async (req, res) => {
       });
     }
   } else {
-    // Signature mismatch error
     res.status(400).json({
       success: false,
       message: "Invalid payment signature",
