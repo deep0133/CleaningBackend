@@ -1,9 +1,12 @@
+import mongoose from "mongoose";
 import { BookingService } from "../../models/Client/booking.model.js";
 import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import ServiceModel from "../../models/Services/services.model.js";
 import crypto from "crypto";
 import Stripe from "stripe";
+
+const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
 const createBookingRequestData = {
   category: "basic cleaning",
@@ -63,7 +66,6 @@ export const createBooking = asyncHandler(async (req, res) => {
 
   // Step 1: Fetch the service based on category
   const service = await ServiceModel.findOne({ name: category });
-  console.log("service ..................", service);
   if (!service) {
     return res.status(404).json({
       success: false,
@@ -125,8 +127,8 @@ export const createBooking = asyncHandler(async (req, res) => {
     await booking.save({ session });
 
     // Createig Orderp
-    const paymentIntent = await Stripe.paymentIntents.create({
-      amount: totalPrice,
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: totalPrice * 100,
       currency: "INR",
       metadata: {
         orderId: booking._id.toString(),
