@@ -6,7 +6,6 @@ const bookingSchema = mongoose.Schema(
     Cleaner: { type: mongoose.Schema.Types.ObjectId, ref: "Cleaner" },
     category: {
       type: String,
-      enum: ["basic cleaning", "deep cleaning"],
       required: true,
     },
     PaymentMethod: {
@@ -28,9 +27,11 @@ const bookingSchema = mongoose.Schema(
     OTP: { start: { type: String }, end: { type: String } },
     Duration: { type: Number },
     TotalPrice: { type: Number },
-    razorpayOrderId: { type: String }, // Razorpay order ID (if online payment)
-    razorpayPaymentId: { type: String }, // Razorpay payment ID (on verification)
-    razorpaySignature: { type: String }, // Razorpay signature (on verification)
+    stripeBookingId: {
+      type: String,
+    }, // Razorpay order ID (if online payment)
+    // razorpayPaymentId: { type: String }, // Razorpay payment ID (on verification)
+    // razorpaySignature: { type: String }, // Razorpay signature (on verification)
     UserAddress: { type: String },
     Location: {
       type: {

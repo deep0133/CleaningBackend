@@ -1,9 +1,12 @@
+import mongoose from "mongoose";
 import { BookingService } from "../../models/Client/booking.model.js";
 import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import ServiceModel from "../../models/Services/services.model.js";
 import crypto from "crypto";
 import Stripe from "stripe";
+
+const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
 const createBookingRequestData = {
   category: "basic cleaning",
@@ -63,7 +66,6 @@ export const createBooking = asyncHandler(async (req, res) => {
 
   // Step 1: Fetch the service based on category
   const service = await ServiceModel.findOne({ name: category });
-  console.log("service ..................", service);
   if (!service) {
     return res.status(404).json({
       success: false,
@@ -125,8 +127,8 @@ export const createBooking = asyncHandler(async (req, res) => {
     await booking.save({ session });
 
     // Createig Orderp
-    const paymentIntent = await Stripe.paymentIntents.create({
-      amount: totalPrice,
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: totalPrice * 100,
       currency: "INR",
       metadata: {
         orderId: booking._id.toString(),
@@ -145,23 +147,7 @@ export const createBooking = asyncHandler(async (req, res) => {
       bookingId: booking._id,
     });
 
-    // Step 5: Razorpay order creation if paymentMethod is "online"
-    // let razorpayOrder = null;
-
-    // if (paymentMethod === "online") {
-    //   const amountInPaisa = totalPrice * 100; // Convert to paisa
-    //   razorpayOrder = await razorpay.orders.create({
-    //     amount: amountInPaisa,
-    //     currency: "INR",
-    //     receipt: `receipt_${booking._id}`, // Unique receipt for this booking
-    //   });
-
-    //   // Store the Razorpay order ID in the booking document
-    //   booking.razorpayOrderId = razorpayOrder.id;
-    //   await booking.save({ session }); // Save updated booking with Razorpay order ID
-    // }
-
-    // Stipe begins here
+    // Stipe END here
   } catch (error) {
     // Abort the transaction in case of failure
     await session.abortTransaction();
