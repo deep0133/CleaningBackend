@@ -64,7 +64,24 @@ export const createBooking = asyncHandler(async (req, res) => {
     });
   }
 
-  // Step 1: Fetch the service based on category
+  // Step 1: Check for duplicate bookings
+  const existingBooking = await BookingService.findOne({
+    User: req.user._id,
+    category,
+    "TimeSlot.start": timeSlot.start,
+    "TimeSlot.end": timeSlot.end,
+    UserAddress: userAddress,
+    "Location.coordinates": location.coordinates,
+  });
+
+  if (existingBooking) {
+    return res.status(400).json({
+      success: false,
+      message: "A booking with the same details already exists.",
+    });
+  }
+
+  // Step 2: Fetch the service based on category
   const service = await ServiceModel.findOne({ name: category });
   if (!service) {
     return res.status(404).json({
@@ -73,7 +90,7 @@ export const createBooking = asyncHandler(async (req, res) => {
     });
   }
 
-  // Step 2: Calculate the total price based on the service price and add-ons
+  // Step 3: Calculate the total price based on the service price and add-ons
   let totalPrice = service.pricePerHour; // Base price for the service
 
   // Add the price of selected add-ons
@@ -86,7 +103,7 @@ export const createBooking = asyncHandler(async (req, res) => {
     }
   }
 
-  // Step 3: Validate that the payment value matches the calculated total price
+  // Step 4: Validate that the payment value matches the calculated total price
   if (paymentValue !== totalPrice) {
     return res.status(400).json({
       success: false,
@@ -104,7 +121,7 @@ export const createBooking = asyncHandler(async (req, res) => {
   session.startTransaction();
 
   try {
-    // Step 4: Create the booking document
+    // Step 5: Create the booking document
     const booking = new BookingService({
       User: req.user._id, // User ID from JWT
       category,
