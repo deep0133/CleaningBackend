@@ -28,9 +28,12 @@ const bookingSchema = mongoose.Schema(
     OTP: { start: { type: String }, end: { type: String } },
     Duration: { type: Number },
     TotalPrice: { type: Number },
-    razorpayOrderId: { type: String }, // Razorpay order ID (if online payment)
-    razorpayPaymentId: { type: String }, // Razorpay payment ID (on verification)
-    razorpaySignature: { type: String }, // Razorpay signature (on verification)
+    stripeBookingId: { 
+      type: String,
+      
+    }, // Razorpay order ID (if online payment)
+    // razorpayPaymentId: { type: String }, // Razorpay payment ID (on verification)
+    // razorpaySignature: { type: String }, // Razorpay signature (on verification)
     UserAddress: { type: String },
     Location: {
       type: {
