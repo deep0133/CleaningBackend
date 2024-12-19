@@ -521,6 +521,37 @@ const resetPassowrd = asyncHandler(async (req, res, next) => {
   res.status(200).json({ message: "Password reset successful" });
 });
 
+const deleteAddress = asyncHandler(async(req,res)=>{
+  const {index,id} = req.body;
+
+  if(!id){
+    throw new ApiError(401,"user id is required")
+  }
+const user = await User.findById(id);
+
+if(!user){
+  throw new ApiError(401,"user does not exits")
+}
+
+console.log("........",user.address.length)
+if(index >= user.address.length){
+  console.log("index is wrong")
+}
+
+if (index === undefined || typeof index !== 'number' || index < 0 || index >= user.address.length) {
+  throw new ApiError(400, "Index should be a valid integer within the range of the addresses array.");
+}
+
+  user.address.splice(index, 1);
+  await user.save();
+
+
+  res.status(200)
+  .json(new ApiResponse(200,{},"address is removed successfully",true))
+
+
+})
+
 export {
   myProfile,
   allUsers,
@@ -535,6 +566,6 @@ export {
   forgotPassword,
   verifyOtp,
   resetPassowrd,
-  verifyOtpController
-
+  verifyOtpController,
+  deleteAddress
 };

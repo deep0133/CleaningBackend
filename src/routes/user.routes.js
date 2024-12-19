@@ -12,6 +12,7 @@ import {
   myProfile,
   addNewAddress,
   allUsers,
+  deleteAddress,
 } from "../controllers/user/user.controller.js";
 import { isAdmin, isAuthenticated } from "../middleware/authenticateUser.js";
 const router = Router();
@@ -29,6 +30,7 @@ router.get("/all", allUsers);
 router.post("/add/address", isAuthenticated, addNewAddress);
 router.post("/update/address", isAuthenticated, updateAddress);
 router.post("/change/password", isAuthenticated, changePassword);
+router.post("/deleteAddress",isAuthenticated,deleteAddress)
 
 // Contact Us : Help & Support
 router.get("/contact", isAuthenticated, isAdmin, getAllContact);

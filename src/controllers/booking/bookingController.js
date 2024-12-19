@@ -242,10 +242,12 @@ export const verifyPayment = async (req, res) => {
 };
 
 export const getNearbyCleaners = asyncHandler(async (req, res) => {
-  const { location, category } = req.query;
+  const { location, category } = req.body;
+
+  console.log(req.query)
 
   const [longitude, latitude] = location.split(",");
-
+  console.log("location........",location)
   const cleaners = await Cleaner.find({
     location: {
       $near: {

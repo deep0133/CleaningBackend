@@ -1,10 +1,12 @@
+
+
 import express from "express";
 const app = express();
 import userRouter from "./routes/user.routes.js";
 import bookingRouter from "./routes/booking.routes.js";
 import cors from "cors";
 
-import otp from './routes/otp.router.js'
+import otpRouter from "./routes/otp.router.js";
 import manageServiceRouter from "./routes/adminManageService.routes.js";
 import addOnsRouter from "./routes/addOns.routes.js";
 
@@ -28,10 +30,12 @@ app.use(
 
 // ---User Routes---
 app.use("/api/v1/users", userRouter);
-app.use("/api/v1/otp", otp);
+app.use("/api/v1/otp", otpRouter);
+app.use("/api/v1/booking", bookingRouter);
+
+// ---Admin Routes---
 app.use("/api/v1/admin", manageServiceRouter);
 app.use("/api/v1/admin/addons", addOnsRouter);
-app.use("/api/v1/booking", bookingRouter);
 
 // Default route for unhandled paths
 app.all("*", (req, res) => {
@@ -41,20 +45,5 @@ app.all("*", (req, res) => {
   });
 });
 
+export { app };
 
-app.use("/", (req, res) => {
-   res.json({
-     status: "success",
-    message: "Welcome to the API",
-});
-});
-
-// Error-handling middleware
-app.use((err, req, res, next) => {
-  console.error("Error occurred:", err.message);
-  res.status(500).json({
-    status: "Error",
-    message: "Something went wrong",
-    error: err.message,
-  });
-});

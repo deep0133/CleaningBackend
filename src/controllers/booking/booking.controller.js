@@ -4,6 +4,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import ServiceModel from '../../models/Services/services.model.js'
 
 import crypto from "crypto";
+import mongoose from "mongoose";
 
 const createBookingRequestData = {
   category: "basic cleaning",
@@ -91,10 +92,9 @@ export const createBooking = asyncHandler(async (req, res) => {
     location, 
     addOns = [], 
   } = req.body;
-
-  // Validate input
+// console.log("....................addOns....................",addOns)
   
-  if (!category || !timeSlot || !paymentMethod || !userAddress || !location) {
+if (!category || !timeSlot || !paymentMethod || !userAddress || !location) {
     return res.status(400).json({
       success: false,
       message: "All fields are required",
@@ -132,6 +132,7 @@ console.log("....service...",service)
     });
   }
 
+  console.log("services >..>.............")
   // Step 2: Calculate the total price based on the service price and add-ons
   let totalPrice = service.pricePerHour; // Base price for the service
 
@@ -159,6 +160,7 @@ console.log("....service...",service)
   );
 
   // Begin transaction
+  console.log("hello world ..........",duration)
   const session = await mongoose.startSession();
   session.startTransaction();
 
