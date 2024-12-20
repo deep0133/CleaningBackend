@@ -9,7 +9,7 @@ const serviceSid = process.env.TWILIO_SERVICE_SID;
 console.log()
 
 // Verify Service SID
-const client = twilio(accountSid, authToken);
+const client = twilio(accountSid, authToken,{logLevel:'debug'});
 
 // // Function to send OTP
 async function sendOtp(phoneNumber) {

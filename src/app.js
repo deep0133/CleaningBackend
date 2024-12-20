@@ -47,3 +47,12 @@ app.all("*", (req, res) => {
 
 export { app };
 
+
+app.use((err,req,res)=>{
+  res.json(
+    {
+      success:false,
+      error:err.message
+    }
+  )
+})
