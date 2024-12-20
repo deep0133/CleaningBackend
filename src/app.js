@@ -2,13 +2,13 @@ import cors from "cors";
 import express from "express";
 import bookingRouter from "./routes/booking.routes.js";
 import userRouter from "./routes/user.routes.js";
-const app = express();
-
-import addOnsRouter from "./routes/addOns.routes.js";
+import otpRouter from "./routes/otp.router.js";
 import manageServiceRouter from "./routes/adminManageService.routes.js";
-import otp from "./routes/otp.router.js";
+import addOnsRouter from "./routes/addOns.routes.js";
 import { verifyStripePayment } from "./controllers/payment/verifyPaymentWebhook.js";
 import { balanceWebhook } from "./controllers/payment/balanceWebhook.js";
+
+const app = express();
 
 app.use(
   cors({
@@ -30,15 +30,13 @@ app.use(
 
 // ---User Routes---
 app.use("/api/v1/users", userRouter);
-app.use("/api/v1/otp", otp);
+app.use("/api/v1/otp", otpRouter);
 app.use("/api/v1/booking", bookingRouter);
 
 // ---Admin Routes---
 app.use("/api/v1/admin", manageServiceRouter);
 app.use("/api/v1/admin/addons", addOnsRouter);
 
-// Match the raw body to content type application/json
-// If you are using Express v4 - v4.16 you need to use body-parser, not express, to retrieve the request body
 app.post(
   "/webhook/paymentStatus",
   express.raw({ type: "application/json" }),
@@ -56,12 +54,9 @@ app.all("*", (req, res) => {
 
 export { app };
 
-// Error-handling middleware
 app.use((err, req, res, next) => {
-  console.error("Error occurred:", err.message);
-  res.status(500).json({
-    status: "Error",
-    message: "Something went wrong",
+  res.json({
+    success: false,
     error: err.message,
   });
 });

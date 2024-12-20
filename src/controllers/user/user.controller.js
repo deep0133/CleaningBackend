@@ -6,6 +6,7 @@ import { ApiResponse } from "../../utils/apiResponse.js";
 import { Contact } from "../../models/contactSchema.js";
 import twilio from "twilio"; // Twilio for SMS
 import { sendOtp,verifyOtp } from "../../utils/opt.js";
+import jwt from 'jsonwebtoken'
 
 const verifyOtpController = asyncHandler(async (req, res) => {
   const { name, email, phoneNumber, password, role, address, category, otp } = req.body;
@@ -310,11 +311,19 @@ const login = asyncHandler(async (req, res) => {
 });
 
 const logout = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id);
+const {token} = req.body;
+if(!token){
+  throw new ApiError(400,"token is required");
+}
+
+const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECERET);
+
+const user = await User.findById(decoded._id);
 
   // Clear the refresh token
   user.accessToken = null;
   user.refreshToken = null;
+  
   await user.save();
 
   // Respond with a success message
@@ -450,43 +459,31 @@ const getAllContact = asyncHandler(async (req, res) => {
 });
 
 // Enter Phone Number To Recieve OTP for reset password
-const forgotPassword = async (req, res) => {
-  const { phoneNumber } = req.body;
-
-  try {
-    // Find user by phone number
-    const user = await User.findOne({ phoneNumber });
-
-    if (!user) {
-      return res
-        .status(404)
-        .json({ message: "User with this phone number not found" });
-    }
-
-    // Generate a 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Set OTP and expiry (5 minutes from now)
-    user.otp = otp;
-    user.otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-
-    await user.save();
-
-    // Send OTP via SMS using Twilio
-    // await client.messages.create({
-    //   body: `Your OTP for password reset is: ${otp}`,
-    //   from: twilioPhone,
-    //   to: phoneNumber,
-    // });
-
-    res
-      .status(200)
-      .json({ message: "OTP sent successfully to your mobile number" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal server error" });
+const forgotPassword = asyncHandler(async (req,res)=>{
+  const {newPassword,phoneNumber} = req.body;
+  
+  if(!newPassword || !phoneNumber){
+    throw new ApiError(400,"pasword or phoneNumber is missing");
+  } 
+   
+  const user = await User.findOne({phoneNumber});
+  
+  if(!user){
+    throw new ApiError(400,"user with this number does not exists")
   }
-};
+
+   if(!user.isOtpVerified){
+    throw new ApiError(400,"user is not verified ")
+   }
+
+     user.password = newPassword;
+     await user.save()
+
+     res.status(200)
+     .json( new ApiResponse(200,{},"Password is updated successfully"))
+
+
+})
 
 
 // Reset Password --- by JWT TOken --- this will only use when we send token through jwt.
@@ -509,6 +506,39 @@ const resetPassowrd = asyncHandler(async (req, res, next) => {
   res.status(200).json({ message: "Password reset successful" });
 });
 
+const deleteAddress = asyncHandler(async(req,res)=>{
+  const {index,token} = req.body;
+console.log(process.env.ACCESS_TOKEN_SECERET);
+  if(!token){
+    throw new ApiError(400,"token is required");
+  }
+
+  const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECERET);
+
+  console.log(decoded);
+  const id = decoded._id;
+
+const user = await User.findById(id);
+  user.address.splice(index, 1);
+  await user.save();
+
+if(!user){
+  throw new ApiError(400,"user does not exists");
+}
+
+    if (index === undefined || typeof index !== 'number' || index < 0 || index >= user.address.length) {
+  throw new ApiError(400, "Index should be a valid integer within the range of the addresses array.");
+}
+
+  user.address.splice(index, 1);
+  await user.save();
+
+  res.status(200)
+  .json(new ApiResponse(200,{},"address is removed successfully",true))
+
+
+})
+
 export {
   myProfile,
   allUsers,
@@ -523,6 +553,6 @@ export {
   forgotPassword,
   verifyOtp,
   resetPassowrd,
-  verifyOtpController
-
+  verifyOtpController,
+  deleteAddress
 };

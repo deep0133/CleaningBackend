@@ -9,7 +9,7 @@ const serviceSid = process.env.TWILIO_SERVICE_SID;
 console.log()
 
 // Verify Service SID
-const client = twilio(accountSid, authToken);
+const client = twilio(accountSid, authToken,{logLevel:'debug'});
 
 // // Function to send OTP
 async function sendOtp(phoneNumber) {
@@ -19,6 +19,7 @@ async function sendOtp(phoneNumber) {
       .create({
         to: phoneNumber,
         channel: 'sms',
+        ttl:300
       });
 
     console.log("Verification Details:", verification);
@@ -139,7 +140,7 @@ async function sendOtp(phoneNumber) {
 // Function to verify OTP
 async function verifyOtp(phoneNumber, otpCode) {
   try {
-    // Ensure serviceSid is correctly passed
+    console.log("hello world how are you")
     console.log(`Service SID: ${serviceSid}`);
     
     // API call for verification check
