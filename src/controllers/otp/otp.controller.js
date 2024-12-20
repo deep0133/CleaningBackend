@@ -2,6 +2,7 @@ import { ApiError } from "../../utils/apiError.js";
 import { ApiResponse } from "../../utils/apiResponse.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { sendOtp, verifyOtp } from "../../utils/opt.js";
+import { User } from '../../models/user.model.js'
 
 
 const otpSend = asyncHandler(async (req, res) => {
@@ -31,23 +32,38 @@ const otpSend = asyncHandler(async (req, res) => {
 })
 
 const otpVerification = asyncHandler(async (req, res) => {
+  console.log("hello world")
   const { phoneNumber, otp } = req.body;
+  console.log("..;jkj;lkj;ljl........", req.body)
 
   if (!phoneNumber && otp) {
     throw new ApiError(401, "phoneNumber and otp is required");
   }
+  const user = await User.findOne({ phoneNumber });
 
+  if (!user) {
+    throw new ApiError(401, "user with this phoneNumber does not exists")
+  }
 
   const verificationResponse = await verifyOtp(phoneNumber, otp);
+
+  console.log("................", verificationResponse)
 
 
   if (!verificationResponse.success) {
 
-    throw new ApiError(401, verificationResponse);
+    throw new ApiError(401, "otp is invalid or wrong ");
+
   }
 
+
+
+
+  user.isOtpVerified = true;
+  await user.save();
+
   res.status(200)
-    .json(new ApiResponse(200, {}, "otp is verified successfully", true));
+    .json(new ApiResponse(200, { user }, "otp is verified successfully", true));
 
 
 

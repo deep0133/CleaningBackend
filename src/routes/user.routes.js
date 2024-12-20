@@ -37,7 +37,7 @@ router.get("/contact", isAuthenticated, isAdmin, getAllContact);
 router.post("/contact", isAuthenticated, submitContactForm);
 
 // Forgot Password & Reset Password
-router.post("/forgot/password", forgotPassword);
+router.post("/forgot/password",isAuthenticated, forgotPassword);
 router.post("/reset/password", verifyOtp);
 
 export default router;
