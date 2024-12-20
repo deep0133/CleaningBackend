@@ -1,12 +1,14 @@
-import mongoose from "mongoose";
-import { BookingService } from "../../models/Client/booking.model.js";
-import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
-import { asyncHandler } from "../../utils/asyncHandler.js";
-import ServiceModel from "../../models/Services/services.model.js";
 import crypto from "crypto";
+import mongoose from "mongoose";
 import Stripe from "stripe";
+import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
+import { BookingService } from "../../models/Client/booking.model.js";
+import ServiceModel from "../../models/Services/services.model.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
+
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 const createBookingRequestData = {
   category: "basic cleaning",
@@ -64,7 +66,24 @@ export const createBooking = asyncHandler(async (req, res) => {
     });
   }
 
-  // Step 1: Fetch the service based on category
+  // Step 1: Check for duplicate bookings
+  const existingBooking = await BookingService.findOne({
+    User: req.user._id,
+    category,
+    "TimeSlot.start": timeSlot.start,
+    "TimeSlot.end": timeSlot.end,
+    UserAddress: userAddress,
+    "Location.coordinates": location.coordinates,
+  });
+
+  if (existingBooking) {
+    return res.status(400).json({
+      success: false,
+      message: "A booking with the same details already exists.",
+    });
+  }
+
+  // Step 2: Fetch the service based on category
   const service = await ServiceModel.findOne({ name: category });
   if (!service) {
     return res.status(404).json({
@@ -73,7 +92,7 @@ export const createBooking = asyncHandler(async (req, res) => {
     });
   }
 
-  // Step 2: Calculate the total price based on the service price and add-ons
+  // Step 3: Calculate the total price based on the service price and add-ons
   let totalPrice = service.pricePerHour; // Base price for the service
 
   // Add the price of selected add-ons
@@ -86,7 +105,7 @@ export const createBooking = asyncHandler(async (req, res) => {
     }
   }
 
-  // Step 3: Validate that the payment value matches the calculated total price
+  // Step 4: Validate that the payment value matches the calculated total price
   if (paymentValue !== totalPrice) {
     return res.status(400).json({
       success: false,
@@ -104,7 +123,7 @@ export const createBooking = asyncHandler(async (req, res) => {
   session.startTransaction();
 
   try {
-    // Step 4: Create the booking document
+    // Step 5: Create the booking document
     const booking = new BookingService({
       User: req.user._id, // User ID from JWT
       category,
@@ -160,94 +179,95 @@ export const createBooking = asyncHandler(async (req, res) => {
   }
 });
 
-export const verifyPayment = async (req, res) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
-    req.body;
+// export const verifyPayment = async (req, res) => {
+//   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+//     req.body;
 
-  // 1. Prepare the body string for verification
-  const body = razorpay_order_id + "|" + razorpay_payment_id;
+//   // 1. Prepare the body string for verification
+//   const body = razorpay_order_id + "|" + razorpay_payment_id;
 
-  // 2. Generate the expected signature using the key secret
-  const expectedSignature = crypto
-    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-    .update(body)
-    .digest("hex");
+//   // 2. Generate the expected signature using the key secret
+//   const expectedSignature = crypto
+//     .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+//     .update(body)
+//     .digest("hex");
 
-  // 3. Compare the generated signature with the Razorpay signature
-  if (expectedSignature === razorpay_signature) {
-    try {
-      // 4. Payment is verified, so update the payment status in your booking model
-      const booking = await BookingService.findOne({
-        razorpayOrderId: razorpay_order_id,
-      });
+//   // 3. Compare the generated signature with the Razorpay signature
+//   if (expectedSignature === razorpay_signature) {
+//     try {
+//       // 4. Payment is verified, so update the payment status in your booking model
+//       const booking = await BookingService.findOne({
+//         razorpayOrderId: razorpay_order_id,
+//       });
 
-      if (!booking) {
-        return res.status(404).json({
-          success: false,
-          message: "Booking not found for this order",
-        });
-      }
+//       if (!booking) {
+//         return res.status(404).json({
+//           success: false,
+//           message: "Booking not found for this order",
+//         });
+//       }
 
-      // Update the booking status and payment details
-      booking.PaymentStatus = "paid"; // Mark the payment as successful
-      booking.BookingStatus = true; // Mark the booking as confirmed
-      await booking.save();
+//       // Update the booking status and payment details
+//       booking.PaymentStatus = "paid"; // Mark the payment as successful
+//       booking.BookingStatus = true; // Mark the booking as confirmed
+//       await booking.save();
 
-      // 5. Find nearby cleaners who are available (based on location and category)
-      const nearbyCleaners = await Cleaner.find({
-        location: {
-          $near: {
-            $geometry: booking.Location, // Booking's location for proximity
-            $maxDistance: 10000, // 10 km radius
-          },
-        },
-        category: { $in: [booking.category] }, // Matching category
-        availability: true, // Ensure the cleaner is available
-      });
+//       // 5. Find nearby cleaners who are available (based on location and category)
+//       const nearbyCleaners = await Cleaner.find({
+//         location: {
+//           $near: {
+//             $geometry: booking.Location, // Booking's location for proximity
+//             $maxDistance: 10000, // 10 km radius
+//           },
+//         },
+//         category: { $in: [booking.category] }, // Matching category
+//         availability: true, // Ensure the cleaner is available
+//       });
 
-      // Prepare the data to be sent in the notification
-      const notificationData = {
-        user: booking.User,
-        location: booking.Location,
-        address: booking.UserAddress,
-        totalPrice: booking.TotalPrice,
-        timeSlot: booking.TimeSlot,
-        duration: booking.Duration,
-        category: booking.category,
-      };
+//       // Prepare the data to be sent in the notification
+//       const notificationData = {
+//         user: booking.User,
+//         location: booking.Location,
+//         address: booking.UserAddress,
+//         totalPrice: booking.TotalPrice,
+//         timeSlot: booking.TimeSlot,
+//         duration: booking.Duration,
+//         category: booking.category,
+//       };
 
-      // 6. Send notification to each nearby cleaner
-      nearbyCleaners.forEach((cleaner) => {
-        sendNotificationToCleaner(cleaner, notificationData); // Send notification to each cleaner
-      });
+//       // 6. Send notification to each nearby cleaner
+//       nearbyCleaners.forEach((cleaner) => {
+//         sendNotificationToCleaner(cleaner, notificationData); // Send notification to each cleaner
+//       });
 
-      // Send the response to the client
-      res.status(200).json({
-        success: true,
-        message: "Payment verified and nearby cleaners notified successfully",
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({
-        success: false,
-        message: "Error occurred while verifying the payment",
-      });
-    }
-  } else {
-    res.status(400).json({
-      success: false,
-      message: "Invalid payment signature",
-    });
-  }
-};
+//       // Send the response to the client
+//       res.status(200).json({
+//         success: true,
+//         message: "Payment verified and nearby cleaners notified successfully",
+//       });
+//     } catch (error) {
+//       console.error(error);
+//       res.status(500).json({
+//         success: false,
+//         message: "Error occurred while verifying the payment",
+//       });
+//     }
+//   } else {
+//     // Signature mismatch error
+//     res.status(400).json({
+//       success: false,
+//       message: "Invalid payment signature",
+//     });
+//   }
+// };
 
 export const getNearbyCleaners = asyncHandler(async (req, res) => {
   const { location, category } = req.body;
 
-  console.log(req.query)
+  console.log(req.query);
 
   const [longitude, latitude] = location.split(",");
-  console.log("location........",location)
+  console.log("location........", location);
   const cleaners = await Cleaner.find({
     location: {
       $near: {
