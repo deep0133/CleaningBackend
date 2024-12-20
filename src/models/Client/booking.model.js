@@ -17,7 +17,15 @@ const bookingSchema = mongoose.Schema(
     PaymentStatus: {
       type: String,
       required: true,
-      enum: ["paid", "pending", "failed"],
+      enum: [
+        "amount_capturable",
+        "canceled",
+        "created",
+        "partially_funded",
+        "failed",
+        "processing",
+        "paid",
+      ],
     },
     BookingStatus: { type: Boolean, required: true }, // when accepted : true
     TimeSlot: {

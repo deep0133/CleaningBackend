@@ -1,12 +1,14 @@
-import express from "express";
-const app = express();
-import userRouter from "./routes/user.routes.js";
-import bookingRouter from "./routes/booking.routes.js";
 import cors from "cors";
+import express from "express";
+import bookingRouter from "./routes/booking.routes.js";
+import userRouter from "./routes/user.routes.js";
+const app = express();
 
-import otp from "./routes/otp.router.js";
-import manageServiceRouter from "./routes/adminManageService.routes.js";
 import addOnsRouter from "./routes/addOns.routes.js";
+import manageServiceRouter from "./routes/adminManageService.routes.js";
+import otp from "./routes/otp.router.js";
+import { verifyStripePayment } from "./controllers/payment/verifyPaymentWebhook.js";
+import { balanceWebhook } from "./controllers/payment/balanceWebhook.js";
 
 app.use(
   cors({
@@ -34,6 +36,15 @@ app.use("/api/v1/booking", bookingRouter);
 // ---Admin Routes---
 app.use("/api/v1/admin", manageServiceRouter);
 app.use("/api/v1/admin/addons", addOnsRouter);
+
+// Match the raw body to content type application/json
+// If you are using Express v4 - v4.16 you need to use body-parser, not express, to retrieve the request body
+app.post(
+  "/webhook/paymentStatus",
+  express.raw({ type: "application/json" }),
+  verifyStripePayment
+);
+app.post("/webhook/balance", balanceWebhook);
 
 // Default route for unhandled paths
 app.all("*", (req, res) => {

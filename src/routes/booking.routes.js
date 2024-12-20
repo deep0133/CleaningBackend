@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { isAdmin, isAuthenticated } from "../middleware/authenticateUser.js";
 import {
   acceptBooking,
   createBooking,
@@ -12,13 +11,12 @@ import {
   getNearbyCleaners,
   getUserBookings,
   startService,
-  verifyPayment,
 } from "../controllers/booking/bookingController.js";
+import { isAdmin, isAuthenticated } from "../middleware/authenticateUser.js";
 const router = Router();
 
 // User Actions:
 router.post("/createBooking", isAuthenticated, createBooking);
-router.post("/verifyPayment", isAuthenticated, verifyPayment);
 router.post("/nearByCleaner", isAuthenticated, getNearbyCleaners);
 
 router.post("/getUserBookings", isAuthenticated, getUserBookings);
