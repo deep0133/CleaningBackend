@@ -24,6 +24,7 @@ const cleaner = new Schema(
       },
       coordinates: {
         type: [Number], // [longitude, latitude]
+        required:true
       },
     },
     availability: {
@@ -35,9 +36,7 @@ const cleaner = new Schema(
       ref: "Booking", // Reference to the current booking they are working on
 
     },
-    otp: {
-      type: String, // OTP for booking verification
-    },
+   
     rating: {
       type: Number,
       default: 0, // Average rating from user feedback
