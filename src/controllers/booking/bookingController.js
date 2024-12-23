@@ -5,6 +5,8 @@ import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import { BookingService } from "../../models/Client/booking.model.js";
 import ServiceModel from "../../models/Services/services.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import {ApiError} from '../../utils/apiError.js'
+import {ApiResponse} from '../../utils/apiResponse.js'
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
@@ -265,10 +267,13 @@ export const getNearbyCleaners = asyncHandler(async (req, res) => {
   // how to send location in what format should i send location 
   const { location, category } = req.body;
 
-  console.log(req.query);
+  if(!location || !location.longitude || !location.latitude){
+    throw new ApiError(400,"location is required");
+  }
 
-  const [longitude, latitude] = location.split(",");
-  console.log("location........", location);
+  const longitude = parseFloat(location.longitude);
+  const latitude = parseFloat(location.latitude);
+
   const cleaners = await Cleaner.find({
     location: {
       $near: {
