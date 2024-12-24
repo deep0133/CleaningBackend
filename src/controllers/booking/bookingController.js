@@ -265,7 +265,7 @@ export const createBooking = asyncHandler(async (req, res) => {
 
 export const getNearbyCleaners = asyncHandler(async (req, res) => {
   // how to send location in what format should i send location 
-  const { location, category } = req.body;
+  const { location, category} = req.body;
 
   if(!location || !location.longitude || !location.latitude){
     throw new ApiError(400,"location is required");
@@ -289,26 +289,32 @@ export const getNearbyCleaners = asyncHandler(async (req, res) => {
   });
      
 if(cleaners.length===0){
-  // cleaners.forEach(cleaner => {
-  //   if (cleaner.socketId) { // Check if the cleaner is connected via socket
-  //     io.to(cleaner.socketId).emit('new_job_notification', {
-  //       title: 'New Cleaning Job Available!',
-  //       body: `A new ${category} job is available near you.`,
-  //       // ... other data
-  //     });
-  //   } else {
-  //     console.log(`Cleaner ${cleaner._id} is not connected via socket.`);
-  //   }
-  // });
+ 
 
   res.status(200)
   .json(new ApiResponse(200,{},"no cleaner avaliable in this area ",true))
-}else{
-  res.status(200)
-  .json(new ApiResponse(200,cleaners,"no cleaner avaliable in this area ",true));
 }
 
+cleaners.forEach((cleaner) => {
+  if (cleaner.socketId) {
+    // Ensure cleaner is connected via socket
+    io.to(cleaner.socketId).emit("new_job_notification", {
+      title: "New Cleaning Job Available!",
+      body: `A new ${category} job is available near your location.`,
+      jobDetails: {
+        userSocketId: socketId, // Pass user socket ID if needed
+        location: { longitude, latitude },
+        category,
+      },
+    });
+  } else {
+    console.log(`Cleaner ${cleaner._id} is not connected via socket.`);
+  }
+});
 
+  res.status(200)
+  .json(new ApiResponse(200,cleaners,"cleaners found",true))
+  
 });
 
 export const acceptBooking = asyncHandler(async (req, res) => {
