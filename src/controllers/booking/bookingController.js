@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import mongoose from "mongoose";
 import Stripe from "stripe";
 import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
@@ -28,17 +27,14 @@ const createBookingRequestData = {
 
 export const createBooking = asyncHandler(async (req, res) => {
   const {
-    category,
-    timeSlot, // { start: Date, end: Date }
     paymentMethod,
     paymentValue,
     userAddress,
     location, // { type: "Point", coordinates: [longitude, latitude] }
-    addOns = [],
   } = req.body;
 
   // Validate inputF
-  if (!category || !timeSlot || !paymentMethod || !userAddress || !location) {
+  if (!paymentMethod || !userAddress || !location) {
     return res.status(400).json({
       success: false,
       message: "All fields are required",

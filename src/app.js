@@ -5,6 +5,7 @@ import userRouter from "./routes/user.routes.js";
 import otpRouter from "./routes/otp.router.js";
 import manageServiceRouter from "./routes/adminManageService.routes.js";
 import addOnsRouter from "./routes/addOns.routes.js";
+import cartRouter from "./routes/cart.routes.js";
 import { verifyStripePayment } from "./controllers/payment/verifyPaymentWebhook.js";
 import { balanceWebhook } from "./controllers/payment/balanceWebhook.js";
 
@@ -31,6 +32,7 @@ app.use(
 // ---User Routes---
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/otp", otpRouter);
+app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/booking", bookingRouter);
 
 // ---Admin Routes---
