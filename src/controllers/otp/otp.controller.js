@@ -32,9 +32,9 @@ const otpSend = asyncHandler(async (req, res) => {
 })
 
 const otpVerification = asyncHandler(async (req, res) => {
-  console.log("hello world")
+
   const { phoneNumber, otp } = req.body;
-  console.log("..;jkj;lkj;ljl........", req.body)
+
 
   if (!phoneNumber && otp) {
     throw new ApiError(401, "phoneNumber and otp is required");
@@ -47,7 +47,6 @@ const otpVerification = asyncHandler(async (req, res) => {
 
   const verificationResponse = await verifyOtp(phoneNumber, otp);
 
-  console.log("................", verificationResponse)
 
 
   if (!verificationResponse.success) {

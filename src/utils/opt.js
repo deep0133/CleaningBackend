@@ -166,7 +166,7 @@ async function verifyOtp(phoneNumber, otpCode) {
         message: "OTP verification failed",
       };
     }
-    console.log("......................./................",verificationCheck)
+    
     return verificationCheck;
   } catch (error) {
     // Enhanced error handling with full error message
