@@ -5,9 +5,11 @@ const bookingSchema = mongoose.Schema(
     User: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     Cleaner: { type: mongoose.Schema.Types.ObjectId, ref: "Cleaner" },
     category: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Services",
       required: true,
     },
+    addOns: [{ type: mongoose.Schema.Types.ObjectId, ref: "AddOns" }],
     PaymentMethod: {
       type: String,
       required: true,

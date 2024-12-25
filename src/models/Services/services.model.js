@@ -9,7 +9,7 @@ const ServiceSchema = new mongoose.Schema({
     {
       // type: mongoose.Schema.Types.ObjectId,
       // ref: "AddOns",
-      type:String
+      type: String,
     },
   ], // Array of add-ons
 });
