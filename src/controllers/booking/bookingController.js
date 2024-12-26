@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import Stripe from "stripe";
 import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import { BookingService } from "../../models/Client/booking.model.js";
-import ServiceModel from "../../models/Services/services.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { Cart } from "../../models/Client/cart.model.js";
 import { PaymentModel } from "../../models/Client/paymentModel.js";
@@ -108,18 +107,22 @@ export const createBooking = asyncHandler(async (req, res) => {
 });
 
 export const getNearbyCleaners = asyncHandler(async (req, res) => {
+  // how to send location in what format should i send location
   const { location, category } = req.body;
 
-  console.log(req.query);
+  if (!location || !location.longitude || !location.latitude) {
+    throw new ApiError(400, "location is required");
+  }
 
-  const [longitude, latitude] = location.split(",");
-  console.log("location........", location);
+  const longitude = parseFloat(location.longitude);
+  const latitude = parseFloat(location.latitude);
+
   const cleaners = await Cleaner.find({
     location: {
       $near: {
         $geometry: {
           type: "Point",
-          coordinates: [parseFloat(longitude), parseFloat(latitude)],
+          coordinates: [longitude, latitude],
         },
         $maxDistance: 10000, // 10 km
       },
@@ -128,7 +131,32 @@ export const getNearbyCleaners = asyncHandler(async (req, res) => {
     availability: true,
   });
 
-  res.status(200).json({ success: true, cleaners });
+  if (cleaners.length === 0) {
+    res
+      .status(200)
+      .json(
+        new ApiResponse(200, {}, "no cleaner avaliable in this area ", true)
+      );
+  }
+
+  cleaners.forEach((cleaner) => {
+    if (cleaner.socketId) {
+      // Ensure cleaner is connected via socket
+      io.to(cleaner.socketId).emit("new_job_notification", {
+        title: "New Cleaning Job Available!",
+        body: `A new ${category} job is available near your location.`,
+        jobDetails: {
+          userSocketId: socketId, // Pass user socket ID if needed
+          location: { longitude, latitude },
+          category,
+        },
+      });
+    } else {
+      console.log(`Cleaner ${cleaner._id} is not connected via socket.`);
+    }
+  });
+
+  res.status(200).json(new ApiResponse(200, cleaners, "cleaners found", true));
 });
 
 export const acceptBooking = asyncHandler(async (req, res) => {

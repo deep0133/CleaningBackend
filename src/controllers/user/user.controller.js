@@ -9,7 +9,7 @@ import { sendOtp,verifyOtp } from "../../utils/opt.js";
 import jwt from 'jsonwebtoken'
 
 const verifyOtpController = asyncHandler(async (req, res) => {
-  const { name, email, phoneNumber, password, role, address, category, otp } = req.body;
+  const { name, email, phoneNumber, password, role, address, category, otp,location,availability,currentBooking,rating,totalBookings,completedBookings,earnings,isOnline } = req.body;
 
   if (!phoneNumber || !otp) {
     throw new ApiError(400, "Phone number and OTP are required");
@@ -49,7 +49,7 @@ if(user){
       throw new ApiError(409, "User with this email already exists");
     }
 
-    if (role === "cleaner" && (!category || category.trim() === "")) {
+    if (role === "cleaner" && (!category )) {
       throw new ApiError(400, "Category field is required for cleaners");
     }
 
@@ -69,6 +69,7 @@ if(user){
       await Cleaner.create({
         user: user._id,
         category,
+        location,availability,currentBooking,rating,totalBookings,completedBookings,earnings,isOnline
       });
     }
 

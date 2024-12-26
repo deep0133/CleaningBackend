@@ -1,5 +1,6 @@
 import ServiceModel from "../../models/Services/services.model.js";
 import { validationResult } from "express-validator";
+import {asyncHandler} from '../../utils/asyncHandler.js'
 
 const getCleaningServices = async (req, res) => {
   try {
@@ -101,9 +102,5 @@ const deleteCleaningService = async (req, res) => {
   }
 };
 
-export {
-  createCleaningService,
-  deleteCleaningService,
-  updateCleaningService,
-  getCleaningServices,
-};
+
+export {createCleaningService,deleteCleaningService,updateCleaningService,getCleaningServices}
