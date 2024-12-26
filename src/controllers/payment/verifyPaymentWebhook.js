@@ -7,25 +7,27 @@ const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 async function updateBookingStatus(bookingId, updates) {
-  try {
-    const updatedBooking = await BookingService.findByIdAndUpdate(
-      bookingId,
-      updates,
-      { new: true }
-    );
-
-    if (updatedBooking) {
-      console.log("Booking updated:", updatedBooking);
-    } else {
-      console.error("No booking found for provided ID:", bookingId);
-    }
-  } catch (error) {
-    console.error("Error updating booking:", error.message);
-  }
+  console.log(`Updating booking status for booking ID: ${bookingId}`);
+  // try {
+  //   const updatedBooking = await BookingService.findByIdAndUpdate(
+  //     bookingId,
+  //     updates,
+  //     { new: true }
+  //   );
+  //   if (updatedBooking) {
+  //     console.log("Booking updated:", updatedBooking);
+  //   } else {
+  //     console.error("No booking found for provided ID:", bookingId);
+  //   }
+  // } catch (error) {
+  //   console.error("Error updating booking:", error.message);
+  // }
 }
 
 async function handleEvent(eventType, paymentIntent) {
   const bookingId = paymentIntent.metadata.orderId;
+
+  console.log(`Handling event for booking ID: ${bookingId}`);
 
   const statusUpdates = {
     "payment_intent.amount_capturable_updated": {
@@ -55,6 +57,8 @@ async function handleEvent(eventType, paymentIntent) {
 export const verifyStripePayment = asyncHandler(async (request, response) => {
   const sig = request.headers["stripe-signature"];
 
+  console.log("------verifying payment------");
+
   let event;
 
   try {
@@ -66,6 +70,8 @@ export const verifyStripePayment = asyncHandler(async (request, response) => {
 
   const { type, data } = event;
   const paymentIntent = data.object;
+
+  console.log(`Received event of type: ${type}`);
 
   try {
     await handleEvent(type, paymentIntent);
