@@ -55,14 +55,16 @@ async function handleEvent(eventType, paymentIntent) {
 }
 
 export const verifyStripePayment = asyncHandler(async (request, response) => {
-  const sig = request.headers["stripe-signature"];
-
-  console.log("------verifying payment------");
+  // const sig = request.headers["stripe-signature"];
+  const sig = request.headers["stripe-signature"]; // Stripe's signature header
+  const rawBody = request.body; // Raw request body from express.raw
+  console.log("------verifying payment------", sig);
+  console.log("------verifying payment------", rawBody);
 
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
+    event = stripe.webhooks.constructEvent(rawBody, sig, endpointSecret);
   } catch (err) {
     console.error(`Webhook Error: ${err.message}`);
     return response.status(400).send(`Webhook Error: ${err.message}`);

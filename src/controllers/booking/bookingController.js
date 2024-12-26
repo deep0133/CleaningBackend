@@ -13,16 +13,22 @@ export const createBooking = asyncHandler(async (req, res) => {
 
   const cart = await Cart.findById(cartId);
 
+  console.log("-----------cart");
+
+  if (cart === null) {
+    return res.status(404).json({ success: false, message: "Cart not found" });
+  }
+
+  if (!cart && cart?.cart.length === 0) {
+    return res.status(404).json({ success: false, message: "Cart is empty" });
+  }
+
   // validate user
   if (cart.User.toString() !== req.user._id.toString()) {
     return res.status(401).json({
       success: false,
       message: "You are not authorized to create this booking",
     });
-  }
-
-  if (cart?.cart.length === 0) {
-    return res.status(404).json({ success: false, message: "Cart is empty" });
   }
 
   // calculate total price of cart items
