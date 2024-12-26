@@ -18,6 +18,7 @@ app.use(
   })
 );
 
+app.use(express.raw({ type: "application/json" }));
 app.use(express.json());
 
 app.use("/images", express.static("uploads"));
@@ -39,11 +40,7 @@ app.use("/api/v1/booking", bookingRouter);
 app.use("/api/v1/admin", manageServiceRouter);
 app.use("/api/v1/admin/addons", addOnsRouter);
 
-app.post(
-  "/webhook/paymentStatus",
-  express.raw({ type: "application/json" }),
-  verifyStripePayment
-);
+app.post("/webhook/paymentStatus", verifyStripePayment);
 app.post("/webhook/balance", balanceWebhook);
 
 // Default route for unhandled paths

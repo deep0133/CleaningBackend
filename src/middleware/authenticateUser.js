@@ -1,10 +1,6 @@
 import jwt from "jsonwebtoken";
 const SECRET_KEY = process.env.ACCESS_TOKEN_SECERET;
 
-
-
-
-
 function isAuthenticated(req, res, next) {
   const authorization = req.headers.authorization;
 
@@ -19,23 +15,18 @@ function isAuthenticated(req, res, next) {
       ? authorization.split("Bearer ")[1]
       : null;
 
- 
-
-
-
-
     if (!token) {
-      console.log("token  is not ....valid........",token)
+      console.log("token  is not ....valid........", token);
       return res.status(401).json({
         message: "Invalid Token Format",
       });
     }
 
     const decoded = jwt.verify(token, SECRET_KEY);
-  
-    req.user = decoded; 
+
+    req.user = decoded;
     // console.log("decoded.......",req.user);
-    next(); 
+    next();
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
       return res.status(401).json({
@@ -64,6 +55,5 @@ function isAdmin(req, res, next) {
   }
   next();
 }
-
 
 export { isAdmin, isAuthenticated };
