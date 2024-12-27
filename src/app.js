@@ -18,7 +18,6 @@ app.use(
   })
 );
 
-// app.use(express.raw({ type: "application/json" }));
 app.use(
   express.json({
     verify(req, res, buf, encoding) {

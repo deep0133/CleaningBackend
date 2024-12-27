@@ -369,3 +369,42 @@ export const getCurrentBookings = asyncHandler(async (req, res) => {
 
   res.status(200).json({ success: true, bookings });
 });
+
+// Cancel Booking by Admin
+export const cancelBookingByAdmin = asyncHandler(async (req, res) => {
+  const { bookingId } = req.params;
+
+  // Find the booking
+  const booking = await BookingService.findById(bookingId).populate(
+    "PaymentId"
+  );
+
+  if (!booking) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Booking not found" });
+  }
+
+  // Refund the payment on Stripe
+  try {
+    const refund = await stripe.refunds.create({
+      payment_intent: booking.PaymentId.stripeOrderId,
+    });
+
+    // Update the booking status
+    booking.BookingStatus = "Cancel";
+    await booking.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Booking canceled and payment refunded",
+      refund,
+    });
+  } catch (error) {
+    console.error("Stripe refund error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to process refund. Try again later.",
+    });
+  }
+});
