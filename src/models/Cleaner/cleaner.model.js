@@ -3,6 +3,7 @@ import { Schema } from "mongoose";
 
 const cleaner = new Schema(
   {
+    // userID
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -10,6 +11,7 @@ const cleaner = new Schema(
       unique: true,
     },
 
+    // serviceType
     category: [
       {
         type: String,
@@ -21,6 +23,7 @@ const cleaner = new Schema(
       type: {
         type: String, // Always "Point"
         enum: ["Point"],
+      
       },
       coordinates: {
         type: [Number], // [longitude, latitude]

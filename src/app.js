@@ -10,12 +10,14 @@ import { balanceWebhook } from "./controllers/payment/balanceWebhook.js";
 
 const app = express();
 
-app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN,
-    Credential: true,
-  })
-);
+// app.use(
+//   cors({
+//     origin: process.env.CORS_ORIGIN,
+//     Credential: true,
+//   })
+// );
+
+app.use(cors())
 
 app.use(express.json());
 
@@ -36,6 +38,11 @@ app.use("/api/v1/booking", bookingRouter);
 // ---Admin Routes---
 app.use("/api/v1/admin", manageServiceRouter);
 app.use("/api/v1/admin/addons", addOnsRouter);
+
+
+app.get('/',async(req,res)=>{
+  res.send('Hello World!')
+})
 
 app.post(
   "/webhook/paymentStatus",
