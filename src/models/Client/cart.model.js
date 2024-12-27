@@ -22,7 +22,7 @@ const cartSchema = mongoose.Schema(
           type: {
             type: String,
             enum: ["Point"],
-            required: true,
+            required: true,  
           },
           coordinates: {
             type: [Number], // [longitude, latitude]
@@ -37,4 +37,4 @@ const cartSchema = mongoose.Schema(
   }
 );
 
-export const Cart = mongoose.model("Cart", cartSchema);
+export  const Cart = mongoose.model("Cart", cartSchema);

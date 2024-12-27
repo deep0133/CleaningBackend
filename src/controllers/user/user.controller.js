@@ -5,73 +5,99 @@ import { ApiError } from "../../utils/apiError.js";
 import { ApiResponse } from "../../utils/apiResponse.js";
 import { Contact } from "../../models/contactSchema.js";
 import twilio from "twilio"; // Twilio for SMS
-import { sendOtp,verifyOtp } from "../../utils/opt.js";
+import { sendOtp, verifyOtp } from "../../utils/opt.js";
 import jwt from 'jsonwebtoken'
 
 const verifyOtpController = asyncHandler(async (req, res) => {
-  const { name, email, phoneNumber, password, role, address, category, otp,location,availability,currentBooking,rating,totalBookings,completedBookings,earnings,isOnline } = req.body;
+  const { name, email, phoneNumber, password, role, address, category, otp, location, availability, currentBooking, rating, totalBookings, completedBookings, earnings, isOnline } = req.body;
 
   if (!phoneNumber || !otp) {
     throw new ApiError(400, "Phone number and OTP are required");
   }
 
-  // Verify OTP
-  const verificationResponse = await verifyOtp(phoneNumber, otp);
-
-
-  if (!verificationResponse.success) {
-
-    throw new ApiError(401, verificationResponse);
+  if (
+    [name, email, password, role, phoneNumber].some(
+      (field) => typeof field !== "string" || field.trim() === ""
+    ) ||
+    !Array.isArray(address) ||
+    address.length === 0
+  ) {
+    throw new ApiError(400, "All fields are required");
   }
-
-  let user = await User.findOne({ phoneNumber });
-if(user){
-  throw new ApiError(401,"user with this phone number already Exists");
-}
-
-  // If additional registration details are provided
-  if (verificationResponse.success === true) {
-   
-
-    if (
-      [name, email, password, role, phoneNumber].some(
-        (field) => typeof field !== "string" || field.trim() === ""
-      ) ||
-      !Array.isArray(address) ||
-      address.length === 0
-    ) {
-      throw new ApiError(400, "All fields are required");
-    }
 
     // Check for existing user by email or phone number
     const existedUser = await User.findOne({ $or: [{ phoneNumber }, { email }] });
     if (existedUser) {
-      throw new ApiError(409, "User with this email already exists");
+      throw new ApiError(409, "User with this email or phoneNumber already exists");
     }
+  
+  if (role === "cleaner" && (!category)) {
+    throw new ApiError(400, "Category field is required for cleaners");
+  }
+    
 
-    if (role === "cleaner" && (!category )) {
-      throw new ApiError(400, "Category field is required for cleaners");
-    }
+  // Verify OTP
+  const verificationResponse = await verifyOtp(phoneNumber, otp);
+
+
+  if (!verificationResponse || verificationResponse.success===false) {
+
+    throw new ApiError(401, verificationResponse,"OTP verification failed");
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+ 
+   
+  // If additional registration details are provided
+
+
+
+
+
+
+
 
     // Create a new user with full details
-    user = await User.create({
+   try {
+    const user = await User.create([{
       name,
       email,
-      password, 
+      password,
       role,
       address,
       phoneNumber,
-      isVerified:true
-    });
+      isVerified: true
+    }], { session });
+
 
     // Create associated Cleaner record if role is cleaner
     if (role === "cleaner") {
-      await Cleaner.create({
+      if(!user._id){
+        throw new ApiError(500, "Something went wrong while registering the user");
+      }
+      const cleaner = await Cleaner.create([{
         user: user._id,
         category,
-        location,availability,currentBooking,rating,totalBookings,completedBookings,earnings,isOnline
-      });
+        location,
+        availability,
+        currentBooking,
+        rating,
+        totalBookings,
+        completedBookings,
+        earnings,
+        isOnline
+      }], { session });
+
+      if (!cleaner || cleaner.length === 0) {
+        throw new ApiError(500, "Failed to create cleaner record");
+      }
+
     }
+
+
+    await session.commitTransaction();
+
 
     // Generate tokens
     const accessToken = user.generateAccessToken();
@@ -91,10 +117,17 @@ if(user){
     }
 
     return res.status(200).json(
-      new ApiResponse(200, {  accessToken, refreshToken }, " otp is verfied and User registered successfully")
+      new ApiResponse(200, { accessToken, refreshToken }, " otp is verfied and User registered successfully")
     );
-  }
+  
 
+   } catch (error) {
+    await session.abortTransaction();
+    console.error(error);
+    throw error;
+   }finally {
+    session.endSession();
+  }
 
 });
 
@@ -119,7 +152,7 @@ if(user){
 //     //   try {
 //     //     status = await sendOtp(phoneNumber);
 //     //     console.log("OTP Request Response:", status);
-  
+
 //     //     if (!status.success) {
 //     //       throw new ApiError(401, status.message || "Sending OTP failed");
 //     //     }
@@ -159,7 +192,7 @@ if(user){
 
 
 
-     
+
 
 //   const user = await User.create({
 //     name,
@@ -178,7 +211,7 @@ if(user){
 //   }
 
 
-   
+
 //   const accessToken = user.generateAccessToken();
 //   const refreshToken = user.generateRefreshToken();
 
@@ -214,7 +247,7 @@ if(user){
 //         createdUser,
 //         accessToken,
 //         refreshToken,
-    
+
 //       },
 //       "user registered successfully"
 //     )
@@ -238,7 +271,7 @@ const register = asyncHandler(async (req, res) => {
 
   if (phoneNumber) {
     try {
-    const  currentStatus = await sendOtp(phoneNumber); 
+      const currentStatus = await sendOtp(phoneNumber);
 
       if (!currentStatus) {
         throw new ApiError(401, "Failed to send OTP");
@@ -251,7 +284,7 @@ const register = asyncHandler(async (req, res) => {
 
 
   res.status(200).json(
-    new ApiResponse( 200,{},"OTP sent successfully Do OTP verification" ,true)
+    new ApiResponse(200, {}, "OTP sent successfully Do OTP verification", true)
   );
 });
 
@@ -302,7 +335,7 @@ const login = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
-      
+
         accessToken,
         refreshToken,
       },
@@ -312,19 +345,19 @@ const login = asyncHandler(async (req, res) => {
 });
 
 const logout = asyncHandler(async (req, res) => {
-const {token} = req.body;
-if(!token){
-  throw new ApiError(400,"token is required");
-}
+  const { token } = req.body;
+  if (!token) {
+    throw new ApiError(400, "token is required");
+  }
 
-const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECERET);
+  const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECERET);
 
-const user = await User.findById(decoded._id);
+  const user = await User.findById(decoded._id);
 
   // Clear the refresh token
   user.accessToken = null;
   user.refreshToken = null;
-  
+
   await user.save();
 
   // Respond with a success message
@@ -333,7 +366,7 @@ const user = await User.findById(decoded._id);
 const myProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).select("-password -accessToken -refreshToken -location ");
 
-  console.log("user/........",user);
+  console.log("user/........", user);
   res.status(200).json({ success: true, user });
 });
 
@@ -441,7 +474,7 @@ const submitContactForm = asyncHandler(async (req, res, next) => {
   }
 
   const newContact = new Contact({
-    userId: req.user._id, 
+    userId: req.user._id,
     fullName,
     email,
     mobileNumber,
@@ -460,28 +493,28 @@ const getAllContact = asyncHandler(async (req, res) => {
 });
 
 // Enter Phone Number To Recieve OTP for reset password
-const forgotPassword = asyncHandler(async (req,res)=>{
-  const {newPassword,phoneNumber} = req.body;
-  
-  if(!newPassword || !phoneNumber){
-    throw new ApiError(400,"pasword or phoneNumber is missing");
-  } 
-   
-  const user = await User.findOne({phoneNumber});
-  
-  if(!user){
-    throw new ApiError(400,"user with this number does not exists")
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { newPassword, phoneNumber } = req.body;
+
+  if (!newPassword || !phoneNumber) {
+    throw new ApiError(400, "pasword or phoneNumber is missing");
   }
 
-   if(!user.isOtpVerified){
-    throw new ApiError(400,"user is not verified ")
-   }
+  const user = await User.findOne({ phoneNumber });
 
-     user.password = newPassword;
-     await user.save()
+  if (!user) {
+    throw new ApiError(400, "user with this number does not exists")
+  }
 
-     res.status(200)
-     .json( new ApiResponse(200,{},"Password is updated successfully"))
+  if (!user.isOtpVerified) {
+    throw new ApiError(400, "user is not verified ")
+  }
+
+  user.password = newPassword;
+  await user.save()
+
+  res.status(200)
+    .json(new ApiResponse(200, {}, "Password is updated successfully"))
 
 
 })
@@ -507,11 +540,11 @@ const resetPassowrd = asyncHandler(async (req, res, next) => {
   res.status(200).json({ message: "Password reset successful" });
 });
 
-const deleteAddress = asyncHandler(async(req,res)=>{
-  const {index,token} = req.body;
-console.log(process.env.ACCESS_TOKEN_SECERET);
-  if(!token){
-    throw new ApiError(400,"token is required");
+const deleteAddress = asyncHandler(async (req, res) => {
+  const { index, token } = req.body;
+  console.log(process.env.ACCESS_TOKEN_SECERET);
+  if (!token) {
+    throw new ApiError(400, "token is required");
   }
 
   const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECERET);
@@ -519,23 +552,23 @@ console.log(process.env.ACCESS_TOKEN_SECERET);
   console.log(decoded);
   const id = decoded._id;
 
-const user = await User.findById(id);
+  const user = await User.findById(id);
   user.address.splice(index, 1);
   await user.save();
 
-if(!user){
-  throw new ApiError(400,"user does not exists");
-}
+  if (!user) {
+    throw new ApiError(400, "user does not exists");
+  }
 
-    if (index === undefined || typeof index !== 'number' || index < 0 || index >= user.address.length) {
-  throw new ApiError(400, "Index should be a valid integer within the range of the addresses array.");
-}
+  if (index === undefined || typeof index !== 'number' || index < 0 || index >= user.address.length) {
+    throw new ApiError(400, "Index should be a valid integer within the range of the addresses array.");
+  }
 
   user.address.splice(index, 1);
   await user.save();
 
   res.status(200)
-  .json(new ApiResponse(200,{},"address is removed successfully",true))
+    .json(new ApiResponse(200, {}, "address is removed successfully", true))
 
 
 })
