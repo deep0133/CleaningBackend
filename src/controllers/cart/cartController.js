@@ -6,19 +6,22 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 
 // Get Cart : Get all items in the cart
 export const getAllCartItems = asyncHandler(async (req, res) => {
-  const [cartItems, bookedCart] = await Promise.all([
-    Cart.find({ User: req.user._id }),
-    BookingService.find({
-      User: req.user._id,
-      "cart.PaymentStatus": "paid",
-      "TimeSlot.start": { $gt: new Date() },
-    }),
-  ]);
+  const cartItems = await Cart.find({ User: req.user._id });
+  const bookedCart = await BookingService.find({
+    User: req.user._id,
+    "CartData.TimeSlot.start": { $gt: new Date() },
+  }).populate("PaymentId");
+
+  // check paymnent status : bookedCart is array
+
+  const upcommingBookig = bookedCart.filter(
+    (item) => item.PaymentId.PaymentStatus === "paid"
+  );
 
   res.status(200).json({
     success: true,
-    cartItems,
-    bookedCart,
+    cartItems: cartItems?.cart || [],
+    bookedCart: upcommingBookig,
   });
 });
 
