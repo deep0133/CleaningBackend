@@ -18,7 +18,7 @@ const app = express();
 //   })
 // );
 
-app.use(cors())
+app.use(cors());
 
 app.use(
   express.json({
@@ -49,21 +49,8 @@ app.use("/api/v1/booking", bookingRouter);
 app.use("/api/v1/admin", manageServiceRouter);
 app.use("/api/v1/admin/addons", addOnsRouter);
 
-<<<<<<< HEAD
-
-app.get('/',async(req,res)=>{
-  res.send('Hello World!')
-})
-
-app.post(
-  "/webhook/paymentStatus",
-  express.raw({ type: "application/json" }),
-  verifyStripePayment
-);
-=======
 // Stripe webhooks (must come after other routes, but before body parsing)
 app.post("/webhook/paymentStatus", verifyStripePayment);
->>>>>>> ca70afaa2f2cd617a9b328e239203babd084a775
 app.post("/webhook/balance", balanceWebhook);
 
 // Default route for unhandled paths
