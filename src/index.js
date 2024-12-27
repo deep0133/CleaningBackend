@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import connectDB from "./db/db.js";
 import { app } from "./app.js";
-import { Server } from "socket.io";
+import {initSocketServer} from "./socket/socketConfig.js";
 
 import http from "http";
 
@@ -11,11 +11,7 @@ dotenv.config({
   path: "./.env",
 });
 
-export const io = new Server(server, {
-  cors: {
-    origin: "*",
-  },
-});
+initSocketServer(server);
 
 connectDB()
   .then(

@@ -1,123 +1,45 @@
-import crypto from "crypto";
 import mongoose from "mongoose";
 import Stripe from "stripe";
 import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import { BookingService } from "../../models/Client/booking.model.js";
-import ServiceModel from "../../models/Services/services.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
-import {ApiError} from '../../utils/apiError.js'
-import {ApiResponse} from '../../utils/apiResponse.js'
+import { Cart } from "../../models/Client/cart.model.js";
+import { PaymentModel } from "../../models/Client/paymentModel.js";
+import sendNotification from "../../socket/sendNotification.js";
+import { NotificationModel } from "../../models/Notification/notificationSchema.js";
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
-const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-const createBookingRequestData = {
-  category: "basic cleaning",
-  timeSlot: {
-    start: "2024-12-06T10:00:00.000Z",
-    end: "2024-12-06T12:00:00.000Z",
-  },
-  paymentMethod: "card",
-  paymentValue: 50,
-  userAddress: "1234 Elm Street",
-  location: {
-    type: "Point",
-    coordinates: [77.1025, 28.7041], // longitude, latitude
-  },
-  addOns: ["addOnId", "...."], // Array of add-ons selected by the user
-};
-
 export const createBooking = asyncHandler(async (req, res) => {
-  const {
-    category,
-    timeSlot, // { start: Date, end: Date }
-    paymentMethod,
-    paymentValue,
-    userAddress,
-    location, // { type: "Point", coordinates: [longitude, latitude] }
-    addOns = [],
-  } = req.body;
+  const { cartId } = req.body;
 
-  // Validate inputF
-  if (!category || !timeSlot || !paymentMethod || !userAddress || !location) {
-    return res.status(400).json({
+  const cart = await Cart.findById(cartId);
+
+  if (cart === null) {
+    return res.status(404).json({ success: false, message: "Cart not found" });
+  }
+
+  if (!cart && cart?.cart.length === 0) {
+    return res.status(404).json({ success: false, message: "Cart is empty" });
+  }
+
+  // validate user
+  if (cart.User.toString() !== req.user._id.toString()) {
+    return res.status(401).json({
       success: false,
-      message: "All fields are required",
+      message: "You are not authorized to create this booking",
     });
   }
 
-  if (!timeSlot.start || !timeSlot.end) {
-    return res.status(400).json({
-      success: false,
-      message: "TimeSlot must include start and end times",
-    });
-  }
-
-  if (new Date(timeSlot.start) >= new Date(timeSlot.end)) {
-    return res.status(400).json({
-      success: false,
-      message: "TimeSlot start time must be before end time",
-    });
-  }
-
-  if (!paymentValue || paymentValue <= 0) {
-    return res.status(400).json({
-      success: false,
-      message: "Payment value must be greater than zero",
-    });
-  }
-
-  // Step 1: Check for duplicate bookings
-  const existingBooking = await BookingService.findOne({
-    User: req.user._id,
-    category,
-    "TimeSlot.start": timeSlot.start,
-    "TimeSlot.end": timeSlot.end,
-    UserAddress: userAddress,
-    "Location.coordinates": location.coordinates,
-  });
-
-  if (existingBooking) {
-    return res.status(400).json({
-      success: false,
-      message: "A booking with the same details already exists.",
-    });
-  }
-
-  // Step 2: Fetch the service based on category
-  const service = await ServiceModel.findOne({ name: category });
-  if (!service) {
-    return res.status(404).json({
-      success: false,
-      message: "Service not found",
-    });
-  }
-
-  // Step 3: Calculate the total price based on the service price and add-ons
-  let totalPrice = service.pricePerHour; // Base price for the service
-
-  // Add the price of selected add-ons
-  if (addOns.length > 0) {
-    for (let addOnId of addOns) {
-      const addOn = await AddOnModel.findById(addOnId); // Find each add-on by its ID
-      if (addOn) {
-        totalPrice += addOn.price; // Add the add-on price to the total
-      }
-    }
-  }
-
-  // Step 4: Validate that the payment value matches the calculated total price
-  if (paymentValue !== totalPrice) {
-    return res.status(400).json({
-      success: false,
-      message: `Payment amount should be ${totalPrice}, but received ${paymentValue}`,
-    });
-  }
-
-  // Calculate duration in minutes
-  const duration = Math.round(
-    (new Date(timeSlot.end) - new Date(timeSlot.start)) / (1000 * 60)
+  // calculate total price of cart items
+  const totalCartPrice = cart.cart.reduce(
+    (sum, item) => sum + item.TotalPrice,
+    0
+  );
+  // calculate total duration of cart items
+  const totalCartDuration = cart.cart.reduce(
+    (sum, item) => sum + item.Duration,
+    0
   );
 
   // Begin transaction
@@ -128,37 +50,85 @@ export const createBooking = asyncHandler(async (req, res) => {
     // Step 5: Create the booking document
     const booking = new BookingService({
       User: req.user._id, // User ID from JWT
-      category,
-      PaymentMethod: paymentMethod,
-      PaymentValue: paymentValue,
-      PaymentStatus: "pending", // Initial status
+      CartData: cart.cart,
       BookingStatus: false, // Pending until a cleaner accepts
-      TimeSlot: timeSlot,
       OTP: {
         start: Math.floor(1000 + Math.random() * 9000).toString(), // Random 4-digit OTP
         end: Math.floor(1000 + Math.random() * 9000).toString(),
       },
-      Duration: duration, // Calculated duration in minutes
-      TotalPrice: totalPrice, // Set the total price
-      UserAddress: userAddress,
-      Location: location,
+      TotalDuration: totalCartDuration,
     });
+
+    // Createig Order
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: totalCartPrice * 100,
+      currency: "INR",
+      metadata: {
+        bookingModelId: booking._id.toString(),
+      },
+    });
+
+    // Step 6: Create a payment document
+    const payment = new PaymentModel({
+      bookingId: booking._id,
+      PaymentValue: totalCartPrice,
+      PaymentStatus: "created", // Initial status
+      stripeOrderId: paymentIntent.id,
+      stripeClientSecerat: paymentIntent.client_secret,
+    });
+
+    // Save payment to the database within the same transaction
+    await payment.save({ session });
+
+    // Step 7: add payemnt id in booking model
+    booking.PaymentId = payment._id;
 
     // Save booking to the database within a transaction
     await booking.save({ session });
 
-    // Createig Orderp
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: totalPrice * 100,
-      currency: "INR",
-      metadata: {
-        orderId: booking._id.toString(),
-      },
-    });
-
     // Commit the transaction
     await session.commitTransaction();
     session.endSession();
+
+    const cleaners = await Cleaner.find({
+      location: {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: [longitude, latitude],
+          },
+          $maxDistance: 10000, // 10 km
+        },
+      },
+      category: { $in: [category] },
+      availability: true,
+    });
+
+    // Notification Data to the cleaner
+    const notificationData = {
+      cart: booking.CartData,
+      status: booking.BookingStatus,
+      totalDuration: booking.TotalDuration,
+      message: `New Booking Request from ${booking.User}`,
+      
+    };
+
+    if (PaymentStatus === "succeeded") {
+
+      sendNotification(cleaners, notificationData);
+
+      //  const notification = await NotificationModel.create({
+      //   cleanerId: cleaners._id,
+      //   bookingId: booking._id,
+      //   message: `New Booking Request from ${booking.User}`,
+      //   isRead: false,
+      //   isExpire: false,
+      //  })
+      
+
+        
+
+    }
 
     // Return response with the Razorpay order details if available
     res.status(201).json({
@@ -166,6 +136,7 @@ export const createBooking = asyncHandler(async (req, res) => {
       booking,
       clientSecret: paymentIntent.client_secret,
       bookingId: booking._id,
+      orderId: paymentIntent.id,
     });
 
     // Stipe END here
@@ -181,94 +152,12 @@ export const createBooking = asyncHandler(async (req, res) => {
   }
 });
 
-// export const verifyPayment = async (req, res) => {
-//   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
-//     req.body;
-
-//   // 1. Prepare the body string for verification
-//   const body = razorpay_order_id + "|" + razorpay_payment_id;
-
-//   // 2. Generate the expected signature using the key secret
-//   const expectedSignature = crypto
-//     .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-//     .update(body)
-//     .digest("hex");
-
-//   // 3. Compare the generated signature with the Razorpay signature
-//   if (expectedSignature === razorpay_signature) {
-//     try {
-//       // 4. Payment is verified, so update the payment status in your booking model
-//       const booking = await BookingService.findOne({
-//         razorpayOrderId: razorpay_order_id,
-//       });
-
-//       if (!booking) {
-//         return res.status(404).json({
-//           success: false,
-//           message: "Booking not found for this order",
-//         });
-//       }
-
-//       // Update the booking status and payment details
-//       booking.PaymentStatus = "paid"; // Mark the payment as successful
-//       booking.BookingStatus = true; // Mark the booking as confirmed
-//       await booking.save();
-
-//       // 5. Find nearby cleaners who are available (based on location and category)
-//       const nearbyCleaners = await Cleaner.find({
-//         location: {
-//           $near: {
-//             $geometry: booking.Location, // Booking's location for proximity
-//             $maxDistance: 10000, // 10 km radius
-//           },
-//         },
-//         category: { $in: [booking.category] }, // Matching category
-//         availability: true, // Ensure the cleaner is available
-//       });
-
-//       // Prepare the data to be sent in the notification
-//       const notificationData = {
-//         user: booking.User,
-//         location: booking.Location,
-//         address: booking.UserAddress,
-//         totalPrice: booking.TotalPrice,
-//         timeSlot: booking.TimeSlot,
-//         duration: booking.Duration,
-//         category: booking.category,
-//       };
-
-//       // 6. Send notification to each nearby cleaner
-//       nearbyCleaners.forEach((cleaner) => {
-//         sendNotificationToCleaner(cleaner, notificationData); // Send notification to each cleaner
-//       });
-
-//       // Send the response to the client
-//       res.status(200).json({
-//         success: true,
-//         message: "Payment verified and nearby cleaners notified successfully",
-//       });
-//     } catch (error) {
-//       console.error(error);
-//       res.status(500).json({
-//         success: false,
-//         message: "Error occurred while verifying the payment",
-//       });
-//     }
-//   } else {
-//     // Signature mismatch error
-//     res.status(400).json({
-//       success: false,
-//       message: "Invalid payment signature",
-//     });
-//   }
-// };
-
 export const getNearbyCleaners = asyncHandler(async (req, res) => {
-  // how to send location in what format should i send location 
-  const { location, category} = req.body;
+  // how to send location in what format should i send location
+  const { location, category } = req.body;
 
-  if(!location || !location.longitude || !location.latitude){
-    throw new ApiError(400,"location is required");
+  if (!location || !location.longitude || !location.latitude) {
+    throw new ApiError(400, "location is required");
   }
 
   const longitude = parseFloat(location.longitude);
@@ -279,7 +168,7 @@ export const getNearbyCleaners = asyncHandler(async (req, res) => {
       $near: {
         $geometry: {
           type: "Point",
-          coordinates: [longitude,latitude],
+          coordinates: [longitude, latitude],
         },
         $maxDistance: 10000, // 10 km
       },
@@ -287,34 +176,33 @@ export const getNearbyCleaners = asyncHandler(async (req, res) => {
     category: { $in: [category] },
     availability: true,
   });
-     
-if(cleaners.length===0){
- 
 
-  res.status(200)
-  .json(new ApiResponse(200,{},"no cleaner avaliable in this area ",true))
-}
-
-cleaners.forEach((cleaner) => {
-  if (cleaner.socketId) {
-    // Ensure cleaner is connected via socket
-    io.to(cleaner.socketId).emit("new_job_notification", {
-      title: "New Cleaning Job Available!",
-      body: `A new ${category} job is available near your location.`,
-      jobDetails: {
-        userSocketId: socketId, // Pass user socket ID if needed
-        location: { longitude, latitude },
-        category,
-      },
-    });
-  } else {
-    console.log(`Cleaner ${cleaner._id} is not connected via socket.`);
+  if (cleaners.length === 0) {
+    res
+      .status(200)
+      .json(
+        new ApiResponse(200, {}, "no cleaner avaliable in this area ", true)
+      );
   }
-});
 
-  res.status(200)
-  .json(new ApiResponse(200,cleaners,"cleaners found",true))
-  
+  cleaners.forEach((cleaner) => {
+    if (cleaner.socketId) {
+      // Ensure cleaner is connected via socket
+      io.to(cleaner.socketId).emit("new_job_notification", {
+        title: "New Cleaning Job Available!",
+        body: `A new ${category} job is available near your location.`,
+        jobDetails: {
+          userSocketId: socketId, // Pass user socket ID if needed
+          location: { longitude, latitude },
+          category,
+        },
+      });
+    } else {
+      console.log(`Cleaner ${cleaner._id} is not connected via socket.`);
+    }
+  });
+
+  res.status(200).json(new ApiResponse(200, cleaners, "cleaners found", true));
 });
 
 export const acceptBooking = asyncHandler(async (req, res) => {
@@ -442,9 +330,15 @@ export const endService = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, booking });
 });
 
-// Get Users Booking
+// Get Users Booking : All Bookings
 export const getUserBookings = asyncHandler(async (req, res) => {
-  const bookings = await BookingService.find({ User: req.user._id });
+  const bookings = await BookingService.find({ User: req.user._id })
+    .populate("Cleaner")
+    .populate({
+      path: "PaymentId",
+      select: "-__v -stripeClientSecerat -bookingId",
+    })
+    .select("-OTP -__v");
 
   res.status(200).json({ success: true, bookings });
 });
@@ -453,7 +347,13 @@ export const getUserBookings = asyncHandler(async (req, res) => {
 export const getCleanerBookings = asyncHandler(async (req, res) => {
   const bookings = await BookingService.find({
     Cleaner: req.user._id,
-  }).populate("User");
+  })
+    .populate({ path: "User", select: "-password -__v" })
+    .populate({
+      path: "PaymentId",
+      select: "-__v -stripeClientSecerat -bookingId",
+    })
+    .select("-OTP -__v");
 
   res.status(200).json({ success: true, bookings });
 });
@@ -461,8 +361,13 @@ export const getCleanerBookings = asyncHandler(async (req, res) => {
 // Get Booking By ID
 export const getBookingById = asyncHandler(async (req, res) => {
   const booking = await BookingService.findById(req.params.id)
-    .populate("User")
-    .populate("Cleaner");
+    .populate({ path: "User", select: "-password -__v" })
+    .populate("Cleaner")
+    .populate({
+      path: "PaymentId",
+      select: "-__v -stripeClientSecerat -bookingId",
+    })
+    .select("-OTP -__v");
 
   if (!booking) {
     return res
@@ -478,7 +383,7 @@ export const getAllUpcomingBookings = asyncHandler(async (req, res) => {
   const bookings = await BookingService.find({
     "TimeSlot.start": { $gt: new Date() },
   })
-    .populate("User")
+    .populate({ path: "User", select: "-password -__v" })
     .populate("Cleaner");
 
   res.status(200).json({ success: true, bookings });
@@ -489,7 +394,7 @@ export const getAllPastBookings = asyncHandler(async (req, res) => {
   const bookings = await BookingService.find({
     "TimeSlot.end": { $lt: new Date() },
   })
-    .populate("User")
+    .populate({ path: "User", select: "-password -__v" })
     .populate("Cleaner");
 
   res.status(200).json({ success: true, bookings });
@@ -501,8 +406,47 @@ export const getCurrentBookings = asyncHandler(async (req, res) => {
     "TimeSlot.start": { $lte: new Date() },
     "TimeSlot.end": { $gte: new Date() },
   })
-    .populate("User")
+    .populate({ path: "User", select: "-password -__v" })
     .populate("Cleaner");
 
   res.status(200).json({ success: true, bookings });
+});
+
+// Cancel Booking by Admin
+export const cancelBookingByAdmin = asyncHandler(async (req, res) => {
+  const { bookingId } = req.params;
+
+  // Find the booking
+  const booking = await BookingService.findById(bookingId).populate(
+    "PaymentId"
+  );
+
+  if (!booking) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Booking not found" });
+  }
+
+  // Refund the payment on Stripe
+  try {
+    const refund = await stripe.refunds.create({
+      payment_intent: booking.PaymentId.stripeOrderId,
+    });
+
+    // Update the booking status
+    booking.BookingStatus = "Cancel";
+    await booking.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Booking canceled and payment refunded",
+      refund,
+    });
+  } catch (error) {
+    console.error("Stripe refund error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to process refund. Try again later.",
+    });
+  }
 });

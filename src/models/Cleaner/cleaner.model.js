@@ -16,7 +16,7 @@ const cleaner = new Schema(
       {
         type: String,
         required: true,
-   default:"deep Cleaning",
+        default: "deep Cleaning",
       },
     ],
     location: {
@@ -37,7 +37,6 @@ const cleaner = new Schema(
     currentBooking: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Booking", // Reference to the current booking they are working on
-
     },
    
     rating: {

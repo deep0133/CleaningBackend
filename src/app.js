@@ -5,6 +5,7 @@ import userRouter from "./routes/user.routes.js";
 import otpRouter from "./routes/otp.router.js";
 import manageServiceRouter from "./routes/adminManageService.routes.js";
 import addOnsRouter from "./routes/addOns.routes.js";
+import cartRouter from "./routes/cart.routes.js";
 import { verifyStripePayment } from "./controllers/payment/verifyPaymentWebhook.js";
 import { balanceWebhook } from "./controllers/payment/balanceWebhook.js";
 
@@ -19,9 +20,15 @@ const app = express();
 
 app.use(cors())
 
-app.use(express.json());
-
-app.use("/images", express.static("uploads"));
+app.use(
+  express.json({
+    verify(req, res, buf, encoding) {
+      if (req.path.includes("webhook")) {
+        req.rawBody = buf.toString(); // sets raw string in req.rawBody variable
+      }
+    },
+  })
+);
 
 app.use(
   express.urlencoded({
@@ -30,15 +37,19 @@ app.use(
   })
 );
 
+app.use("/images", express.static("uploads"));
+
 // ---User Routes---
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/otp", otpRouter);
+app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/booking", bookingRouter);
 
 // ---Admin Routes---
 app.use("/api/v1/admin", manageServiceRouter);
 app.use("/api/v1/admin/addons", addOnsRouter);
 
+<<<<<<< HEAD
 
 app.get('/',async(req,res)=>{
   res.send('Hello World!')
@@ -49,6 +60,10 @@ app.post(
   express.raw({ type: "application/json" }),
   verifyStripePayment
 );
+=======
+// Stripe webhooks (must come after other routes, but before body parsing)
+app.post("/webhook/paymentStatus", verifyStripePayment);
+>>>>>>> ca70afaa2f2cd617a9b328e239203babd084a775
 app.post("/webhook/balance", balanceWebhook);
 
 // Default route for unhandled paths

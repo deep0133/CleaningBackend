@@ -1,6 +1,8 @@
 import Stripe from "stripe";
 import { BookingService } from "../../models/Client/booking.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import { Cart } from "../../models/Client/cart.model.js";
+import { PaymentModel } from "../../models/Client/paymentModel.js";
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
@@ -8,24 +10,37 @@ const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 async function updateBookingStatus(bookingId, updates) {
   try {
-    const updatedBooking = await BookingService.findByIdAndUpdate(
-      bookingId,
-      updates,
-      { new: true }
-    );
+    const booking = await BookingService.findById(bookingId);
 
-    if (updatedBooking) {
-      console.log("Booking updated:", updatedBooking);
-    } else {
-      console.error("No booking found for provided ID:", bookingId);
+    if (!booking || !booking.PaymentId) {
+      throw new Error("No booking found for provided ID");
     }
+
+    const paymentModel = await PaymentModel.findById(booking.PaymentId);
+
+    paymentModel.PaymentStatus = updates.PaymentStatus;
+
+    await paymentModel.save();
+
+    booking.PaymentId.PaymentStatus = updates.PaymentStatus;
+
+    const cart = await Cart.findOne({ User: booking.User });
+
+    if (!cart) {
+      throw new Error("No cart found for provided ID");
+    }
+
+    cart.cart = [];
+    await cart.save();
   } catch (error) {
     console.error("Error updating booking:", error.message);
   }
 }
 
 async function handleEvent(eventType, paymentIntent) {
-  const bookingId = paymentIntent.metadata.orderId;
+  const bookingId = paymentIntent.metadata.bookingModelId;
+
+  console.log("------------Handle Event---metadata---------", bookingId);
 
   const statusUpdates = {
     "payment_intent.amount_capturable_updated": {
@@ -33,16 +48,14 @@ async function handleEvent(eventType, paymentIntent) {
     },
     "payment_intent.canceled": {
       PaymentStatus: "canceled",
-      BookingStatus: false,
     },
     "payment_intent.created": { PaymentStatus: "created" },
     "payment_intent.partially_funded": { PaymentStatus: "partially_funded" },
     "payment_intent.payment_failed": {
       PaymentStatus: "failed",
-      BookingStatus: false,
     },
     "payment_intent.processing": { PaymentStatus: "processing" },
-    "payment_intent.succeeded": { PaymentStatus: "paid", BookingStatus: true },
+    "payment_intent.succeeded": { PaymentStatus: "paid" },
   };
 
   if (statusUpdates[eventType]) {
@@ -53,12 +66,14 @@ async function handleEvent(eventType, paymentIntent) {
 }
 
 export const verifyStripePayment = asyncHandler(async (request, response) => {
-  const sig = request.headers["stripe-signature"];
+  // const sig = request.headers["stripe-signature"];
+  const sig = request.headers["stripe-signature"]; // Stripe's signature header
+  const rawBody = request.rawBody; // Raw request body from express.raw
 
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
+    event = stripe.webhooks.constructEvent(rawBody, sig, endpointSecret);
   } catch (err) {
     console.error(`Webhook Error: ${err.message}`);
     return response.status(400).send(`Webhook Error: ${err.message}`);

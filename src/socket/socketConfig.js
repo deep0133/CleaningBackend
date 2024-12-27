@@ -6,10 +6,12 @@ let io;
 const initSocketServer = (server) => {
   io = new Server(server, {
     cors: {
-      origin: process.env.CORS_ORIGIN,
+      origin: "*",
       methods: ["GET", "POST"],
     },
   });
+
+  console.log("Socket.IO initialized!");
 
   handleSocketConnection(io);
 };
