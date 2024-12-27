@@ -28,7 +28,11 @@ const bookingSchema = mongoose.Schema(
         },
       },
     ],
-    BookingStatus: { type: Boolean, default: false }, // when cleaner Accept : true
+    BookingStatus: {
+      type: Boolean,
+      enum: ["Pending", "Confirm", "Cancel"],
+      default: "Pending",
+    }, // when cleaner Accept : true
     OTP: { start: { type: String }, end: { type: String } },
     TotalDuration: { type: Number },
     PaymentId: {
