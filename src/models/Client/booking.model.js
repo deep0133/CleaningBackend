@@ -4,53 +4,40 @@ const bookingSchema = mongoose.Schema(
   {
     User: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     Cleaner: { type: mongoose.Schema.Types.ObjectId, ref: "Cleaner" },
-    category: {
-      type: String,
-      required: true,
-    },
-    PaymentMethod: {
-      type: String,
-      required: true,
-      enum: ["card", "cash", "online"],
-    },
-    PaymentValue: { type: String },
-    PaymentStatus: {
-      type: String,
-      required: true,
-      enum: [
-        "amount_capturable",
-        "canceled",
-        "created",
-        "partially_funded",
-        "failed",
-        "processing",
-        "paid",
-      ],
-    },
-    BookingStatus: { type: Boolean, required: true }, // when accepted : true
-    TimeSlot: {
-      start: { type: Date, required: true },
-      end: { type: Date, required: true },
-    },
+
+    CartData: [
+      // cartData (store all items from the cart)
+      {
+        categoryId: { type: mongoose.Schema.Types.ObjectId, ref: "Services" },
+        addOns: [{ type: mongoose.Schema.Types.ObjectId, ref: "AddOns" }],
+        TimeSlot: {
+          start: { type: Date },
+          end: { type: Date },
+        },
+        Duration: { type: Number },
+        TotalPrice: { type: Number },
+        UserAddress: { type: String },
+        Location: {
+          type: {
+            type: String,
+            enum: ["Point"],
+          },
+          coordinates: {
+            type: [Number], // [longitude, latitude]
+          },
+        },
+      },
+    ],
+    BookingStatus: { type: Boolean, default: false }, // when cleaner Accept : true
     OTP: { start: { type: String }, end: { type: String } },
-    Duration: { type: Number },
-    TotalPrice: { type: Number },
-    stripeBookingId: {
-      type: String,
-    }, // Razorpay order ID (if online payment)
-    // razorpayPaymentId: { type: String }, // Razorpay payment ID (on verification)
-    // razorpaySignature: { type: String }, // Razorpay signature (on verification)
-    UserAddress: { type: String },
-    Location: {
-      type: {
-        type: String, // Always 'Point'
-        enum: ["Point"],
-      },
-      coordinates: {
-        type: [Number], // [longitude, latitude]
-      },
+    TotalDuration: { type: Number },
+    PaymentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Payment",
+      required: true,
     },
   },
+
   {
     timestamps: true,
   }

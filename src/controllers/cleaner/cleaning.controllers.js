@@ -2,21 +2,20 @@ import ServiceModel from "../../models/Services/services.model.js";
 import { validationResult } from "express-validator";
 import {asyncHandler} from '../../utils/asyncHandler.js'
 
-
-  const getCleaningServices = async (req, res) => {
-    try {
-      const services = await ServiceModel.find();
-      res.status(200).json({
-        message: "Cleaning services retrieved successfully",
-        data: services,
-      });
-    } catch (error) {
-      console.error(error);
-      res
-        .status(500)
-        .json({ message: "Error retrieving cleaning services", error });
-    }
-  };
+const getCleaningServices = async (req, res) => {
+  try {
+    const services = await ServiceModel.find();
+    res.status(200).json({
+      message: "Cleaning services retrieved successfully",
+      data: services,
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Error retrieving cleaning services", error });
+  }
+};
 
 const createCleaningService = async (req, res) => {
   // Input validation using express-validator
@@ -24,15 +23,17 @@ const createCleaningService = async (req, res) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-  
-  let imgFileName=`${req.file.filename}`
+
+  let imgFileName = `${req.file.filename}`;
 
   try {
     const { name, description, pricePerHour, addOns } = req.body;
 
     // Additional manual validation for required fields
     if (!name || !pricePerHour) {
-      return res.status(400).json({ message: "Name and pricePerHour are required" });
+      return res
+        .status(400)
+        .json({ message: "Name and pricePerHour are required" });
     }
 
     // Creating a new service instance
@@ -40,8 +41,8 @@ const createCleaningService = async (req, res) => {
       name,
       description,
       pricePerHour,
-      image:imgFileName,
-      addOns,
+      image: imgFileName,
+      addOns, // [String]
     });
 
     // Save to database
