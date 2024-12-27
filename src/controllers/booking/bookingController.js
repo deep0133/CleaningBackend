@@ -6,7 +6,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { Cart } from "../../models/Client/cart.model.js";
 import { PaymentModel } from "../../models/Client/paymentModel.js";
 import sendNotification from "../../socket/sendNotification.js";
-import { NotificationModel } from "../../models/Notification/notificationSchema.js";
+// import { NotificationModel } from "../../models/Notification/notificationSchema.js";
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
@@ -110,11 +110,9 @@ export const createBooking = asyncHandler(async (req, res) => {
       status: booking.BookingStatus,
       totalDuration: booking.TotalDuration,
       message: `New Booking Request from ${booking.User}`,
-      
     };
 
     if (PaymentStatus === "succeeded") {
-
       sendNotification(cleaners, notificationData);
 
       //  const notification = await NotificationModel.create({
@@ -124,10 +122,6 @@ export const createBooking = asyncHandler(async (req, res) => {
       //   isRead: false,
       //   isExpire: false,
       //  })
-      
-
-        
-
     }
 
     // Return response with the Razorpay order details if available

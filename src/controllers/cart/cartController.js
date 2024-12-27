@@ -19,7 +19,7 @@ export const getAllCartItems = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    cartItems: cartItems?.cart || [],
+    cartItems: cartItems,
     bookedCart: upcommingBookig,
   });
 });
