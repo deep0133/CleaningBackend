@@ -13,8 +13,6 @@ export const createBooking = asyncHandler(async (req, res) => {
 
   const cart = await Cart.findById(cartId);
 
-  console.log("-----------cart");
-
   if (cart === null) {
     return res.status(404).json({ success: false, message: "Cart not found" });
   }
@@ -64,7 +62,7 @@ export const createBooking = asyncHandler(async (req, res) => {
       amount: totalCartPrice * 100,
       currency: "INR",
       metadata: {
-        orderId: booking._id.toString(),
+        bookingModelId: booking._id.toString(),
       },
     });
 
@@ -81,7 +79,7 @@ export const createBooking = asyncHandler(async (req, res) => {
     await payment.save({ session });
 
     // Step 7: add payemnt id in booking model
-    booking.PayementId = payment._id;
+    booking.PaymentId = payment._id;
 
     // Save booking to the database within a transaction
     await booking.save({ session });
@@ -290,9 +288,15 @@ export const endService = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, booking });
 });
 
-// Get Users Booking
+// Get Users Booking : All Bookings
 export const getUserBookings = asyncHandler(async (req, res) => {
-  const bookings = await BookingService.find({ User: req.user._id });
+  const bookings = await BookingService.find({ User: req.user._id })
+    .populate("Cleaner")
+    .populate({
+      path: "PaymentId",
+      select: "-__v -stripeClientSecerat -bookingId",
+    })
+    .select("-OTP -__v");
 
   res.status(200).json({ success: true, bookings });
 });
@@ -301,7 +305,13 @@ export const getUserBookings = asyncHandler(async (req, res) => {
 export const getCleanerBookings = asyncHandler(async (req, res) => {
   const bookings = await BookingService.find({
     Cleaner: req.user._id,
-  }).populate("User");
+  })
+    .populate({ path: "User", select: "-password -__v" })
+    .populate({
+      path: "PaymentId",
+      select: "-__v -stripeClientSecerat -bookingId",
+    })
+    .select("-OTP -__v");
 
   res.status(200).json({ success: true, bookings });
 });
@@ -309,8 +319,13 @@ export const getCleanerBookings = asyncHandler(async (req, res) => {
 // Get Booking By ID
 export const getBookingById = asyncHandler(async (req, res) => {
   const booking = await BookingService.findById(req.params.id)
-    .populate("User")
-    .populate("Cleaner");
+    .populate({ path: "User", select: "-password -__v" })
+    .populate("Cleaner")
+    .populate({
+      path: "PaymentId",
+      select: "-__v -stripeClientSecerat -bookingId",
+    })
+    .select("-OTP -__v");
 
   if (!booking) {
     return res
@@ -326,7 +341,7 @@ export const getAllUpcomingBookings = asyncHandler(async (req, res) => {
   const bookings = await BookingService.find({
     "TimeSlot.start": { $gt: new Date() },
   })
-    .populate("User")
+    .populate({ path: "User", select: "-password -__v" })
     .populate("Cleaner");
 
   res.status(200).json({ success: true, bookings });
@@ -337,7 +352,7 @@ export const getAllPastBookings = asyncHandler(async (req, res) => {
   const bookings = await BookingService.find({
     "TimeSlot.end": { $lt: new Date() },
   })
-    .populate("User")
+    .populate({ path: "User", select: "-password -__v" })
     .populate("Cleaner");
 
   res.status(200).json({ success: true, bookings });
@@ -349,7 +364,7 @@ export const getCurrentBookings = asyncHandler(async (req, res) => {
     "TimeSlot.start": { $lte: new Date() },
     "TimeSlot.end": { $gte: new Date() },
   })
-    .populate("User")
+    .populate({ path: "User", select: "-password -__v" })
     .populate("Cleaner");
 
   res.status(200).json({ success: true, bookings });

@@ -12,34 +12,39 @@ import {
   getUserBookings,
   startService,
 } from "../controllers/booking/bookingController.js";
-import { isAdmin, isAuthenticated } from "../middleware/authenticateUser.js";
+import {
+  isAdmin,
+  isAuthenticated,
+  isCleaner,
+} from "../middleware/authenticateUser.js";
 const router = Router();
 
 // User Actions:
 router.post("/createBooking", isAuthenticated, createBooking);
 router.post("/nearByCleaner", isAuthenticated, getNearbyCleaners);
 
-router.post("/getUserBookings", isAuthenticated, getUserBookings);
-router.post("/getCleanerBookings", isAuthenticated, getCleanerBookings);
-router.post("/getBookingById", isAuthenticated, getBookingById);
-
 // Cleaner Actions:
 router.post("/acceptBooking", isAuthenticated, acceptBooking);
 router.post("/startService", isAuthenticated, startService);
 router.post("/endService", isAuthenticated, endService);
 
-router.post(
+router.get("/getUserBookings", isAuthenticated, getUserBookings);
+router.get(
+  "/getCleanerBookings",
+  isAuthenticated,
+  isCleaner,
+  getCleanerBookings
+);
+router.get("/getBookingById/:id", isAuthenticated, getBookingById);
+
+//  -----------------------Admin Actions-----------------------:
+router.get(
   "/getAllUpcomingBookings",
   isAuthenticated,
   isAdmin,
   getAllUpcomingBookings
 );
-router.post(
-  "/getAllPastBookings",
-  isAuthenticated,
-  isAdmin,
-  getAllPastBookings
-);
-router.post("/getCurrentBookings", isAuthenticated, getCurrentBookings);
+router.get("/getAllPastBookings", isAuthenticated, isAdmin, getAllPastBookings);
+router.get("/getCurrentBookings", isAuthenticated, isAdmin, getCurrentBookings);
 
 export default router;
