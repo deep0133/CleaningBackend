@@ -10,7 +10,6 @@ const cleaner = new Schema(
       required: true,
       unique: true,
     },
-
     // serviceType
     category: [
       {
@@ -19,17 +18,6 @@ const cleaner = new Schema(
         default: "deep Cleaning",
       },
     ],
-    location: {
-      type: {
-        type: String, // Always "Point"
-        enum: ["Point"],
-      
-      },
-      coordinates: {
-        type: [Number], // [longitude, latitude]
-        required:true
-      },
-    },
     availability: {
       type: Boolean,
       default: true, // Indicates if the cleaner is currently available for bookings
@@ -38,7 +26,7 @@ const cleaner = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Booking", // Reference to the current booking they are working on
     },
-   
+
     rating: {
       type: Number,
       default: 0, // Average rating from user feedback
@@ -55,16 +43,15 @@ const cleaner = new Schema(
       type: Number,
       default: 0, // Total earnings from bookings
     },
-    isOnline:{
-      type:Boolean,
-      default:false
-    }
+    isOnline: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
   }
 );
-
 
 // {
 //   "user": "658e9324b78f890001000001", // Replace with a real User ObjectId from your database

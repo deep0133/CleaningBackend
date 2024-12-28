@@ -89,6 +89,8 @@ export const verifyStripePayment = asyncHandler(async (request, response) => {
     return response.status(500).send("Internal Server Error");
   }
 
+  // Notification Send to Cleaner and store data in notification model
+
   // Acknowledge receipt of the event
   response.status(200).send("Webhook event processed");
 });

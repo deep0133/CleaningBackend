@@ -90,40 +90,6 @@ export const createBooking = asyncHandler(async (req, res) => {
     await session.commitTransaction();
     session.endSession();
 
-    const cleaners = await Cleaner.find({
-      location: {
-        $near: {
-          $geometry: {
-            type: "Point",
-            coordinates: [longitude, latitude],
-          },
-          $maxDistance: 10000, // 10 km
-        },
-      },
-      category: { $in: [category] },
-      availability: true,
-    });
-
-    // Notification Data to the cleaner
-    const notificationData = {
-      cart: booking.CartData,
-      status: booking.BookingStatus,
-      totalDuration: booking.TotalDuration,
-      message: `New Booking Request from ${booking.User}`,
-    };
-
-    if (PaymentStatus === "succeeded") {
-      sendNotification(cleaners, notificationData);
-
-      //  const notification = await NotificationModel.create({
-      //   cleanerId: cleaners._id,
-      //   bookingId: booking._id,
-      //   message: `New Booking Request from ${booking.User}`,
-      //   isRead: false,
-      //   isExpire: false,
-      //  })
-    }
-
     // Return response with the Razorpay order details if available
     res.status(201).json({
       success: true,
