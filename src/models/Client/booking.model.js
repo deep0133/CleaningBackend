@@ -24,6 +24,13 @@ const bookingSchema = mongoose.Schema(
           },
           coordinates: {
             type: [Number], // [longitude, latitude]
+            validate: {
+              validator: function (value) {
+                return value.length === 2; // Ensure [longitude, latitude]
+              },
+              message:
+                "Coordinates must contain exactly two numbers (longitude, latitude).",
+            },
           },
         },
       },
