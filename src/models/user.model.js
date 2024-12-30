@@ -2,8 +2,9 @@ import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { Schema } from "mongoose";
+import { findNearbyCleaners } from "../utils/findNearByUser.js";
 
-export const userSchema = new Schema(
+ const userSchema = new Schema(
   {
     name: {
       type: String,
@@ -42,15 +43,39 @@ export const userSchema = new Schema(
       },
     ],
     location: {
-      type: {
-        type: String,
-        enum: ["Point"],
-      },
+      type: { 
+        type: String, 
+        enum: ['Point'],
+         },  // 'type' field as Point for GeoJSON
       coordinates: {
-        type: [Number],
+        type: [Number],  // Longitude, Latitude
+        required: true,
+        validate: {
+          validator: function (coords) {
+            return coords.length === 2;  // Longitude and Latitude
+          },
+          message: "Coordinates must be an array of [longitude, latitude].",
+        },
       },
     },
-
+    // changed from this to below
+    // geo: {
+    //   type: {
+    //     type: String, // Must always be "Point"
+    //     enum: ["Point"], // Validate that type is always "Point"
+    //     required: true,
+    //   },
+    //   coordinates: {
+    //     type: [Number], // Array of numbers: [longitude, latitude]
+    //     required: true,
+    //     validate: {
+    //       validator: function (coords) {
+    //         return coords.length === 2; // Must always have two values: [longitude, latitude]
+    //       },
+    //       message: "Coordinates must be an array of [longitude, latitude].",
+    //     },
+    //   },
+    // },
     accessToken: {
       type: String,
     },
@@ -76,6 +101,12 @@ export const userSchema = new Schema(
     timestamps: true,
   }
 );
+
+
+
+
+
+
 
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
@@ -125,3 +156,23 @@ userSchema.methods.isOtpValid = function () {
 };
 
 export const User = mongoose.model("User", userSchema);
+
+
+// (async () => {
+//   try {
+//     await User.syncIndexes();
+//     console.log("Indexes have been synced successfully.");
+//   } catch (error) {
+//     console.log("...................eeeeeeeeeeeeeeeeeeeer......................")
+//     console.error("Error syncing indexes:", error);
+//   }
+// })();
+
+
+
+User.collection.createIndex({ location: "2dsphere" }).
+  then(() => console.log("Geospatial index created successfully.")).
+  catch((err) => 
+    
+    console.error("Error creating geospatial index:;;;;;;;;;;;;;;;;;;;;;;;;;;;:::::::::::::", err)
+);
