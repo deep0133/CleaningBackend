@@ -8,7 +8,10 @@ import addOnsRouter from "./routes/addOns.routes.js";
 import cartRouter from "./routes/cart.routes.js";
 import { verifyStripePayment } from "./controllers/payment/verifyPaymentWebhook.js";
 import { balanceWebhook } from "./controllers/payment/balanceWebhook.js";
-import {findNearbyCleaners} from './utils/findNearByUser.js';
+import {
+  addDummyData,
+  getNearbyDummyUsers,
+} from "./controllers/user/user.controller.js";
 
 const app = express();
 
@@ -33,6 +36,10 @@ app.use(
 
 app.use("/images", express.static("uploads"));
 
+// app.get("/", findNearbyCleaner);
+app.get("/addDummyData", addDummyData);
+app.post("/getNearbyDummyUsers", getNearbyDummyUsers);
+
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/otp", otpRouter);
 app.use("/api/v1/cart", cartRouter);
@@ -52,9 +59,6 @@ app.all("*", (req, res) => {
     message: "Route not found",
   });
 });
-
-
-
 
 export { app };
 

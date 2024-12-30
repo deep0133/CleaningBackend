@@ -2,9 +2,8 @@ import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { Schema } from "mongoose";
-import { findNearbyCleaners } from "../utils/findNearByUser.js";
 
- const userSchema = new Schema(
+const userSchema = new Schema(
   {
     name: {
       type: String,
@@ -43,39 +42,21 @@ import { findNearbyCleaners } from "../utils/findNearByUser.js";
       },
     ],
     location: {
-      type: { 
-        type: String, 
-        enum: ['Point'],
-         },  // 'type' field as Point for GeoJSON
+      type: {
+        type: String,
+        enum: ["Point"],
+      }, // 'type' field as Point for GeoJSON
       coordinates: {
-        type: [Number],  // Longitude, Latitude
+        type: [Number], // Longitude, Latitude
         required: true,
         validate: {
           validator: function (coords) {
-            return coords.length === 2;  // Longitude and Latitude
+            return coords.length === 2; // Longitude and Latitude
           },
           message: "Coordinates must be an array of [longitude, latitude].",
         },
       },
     },
-    // changed from this to below
-    // geo: {
-    //   type: {
-    //     type: String, // Must always be "Point"
-    //     enum: ["Point"], // Validate that type is always "Point"
-    //     required: true,
-    //   },
-    //   coordinates: {
-    //     type: [Number], // Array of numbers: [longitude, latitude]
-    //     required: true,
-    //     validate: {
-    //       validator: function (coords) {
-    //         return coords.length === 2; // Must always have two values: [longitude, latitude]
-    //       },
-    //       message: "Coordinates must be an array of [longitude, latitude].",
-    //     },
-    //   },
-    // },
     accessToken: {
       type: String,
     },
@@ -84,29 +65,21 @@ import { findNearbyCleaners } from "../utils/findNearByUser.js";
     },
     isVerified: {
       type: Boolean,
-      default: false
+      default: false,
     },
     isOtpVerified: {
       type: Boolean,
-      default: false
+      default: false,
     },
     isActive: {
       type: Boolean,
-      default: false
+      default: false,
     },
-
-
   },
   {
     timestamps: true,
   }
 );
-
-
-
-
-
-
 
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
@@ -116,6 +89,9 @@ userSchema.pre("save", async function (next) {
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });
+
+// Geospatial index for the `location` field
+userSchema.index({ location: "2dsphere" });
 
 userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
@@ -157,7 +133,6 @@ userSchema.methods.isOtpValid = function () {
 
 export const User = mongoose.model("User", userSchema);
 
-
 // (async () => {
 //   try {
 //     await User.syncIndexes();
@@ -168,11 +143,12 @@ export const User = mongoose.model("User", userSchema);
 //   }
 // })();
 
-
-
-User.collection.createIndex({ location: "2dsphere" }).
-  then(() => console.log("Geospatial index created successfully.")).
-  catch((err) => 
-    
-    console.error("Error creating geospatial index:;;;;;;;;;;;;;;;;;;;;;;;;;;;:::::::::::::", err)
-);
+// User.collection
+//   .createIndex({ location: "2dsphere" })
+//   .then(() => console.log("Geospatial index created successfully."))
+//   .catch((err) =>
+//     console.error(
+//       "Error creating geospatial index:;;;;;;;;;;;;;;;;;;;;;;;;;;;:::::::::::::",
+//       err
+//     )
+//   );

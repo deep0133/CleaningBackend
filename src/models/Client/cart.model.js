@@ -22,11 +22,17 @@ const cartSchema = mongoose.Schema(
           type: {
             type: String,
             enum: ["Point"],
-            required: true,  
+            required: true,
           },
           coordinates: {
             type: [Number], // [longitude, latitude]
             required: true,
+            validate: {
+              validator: function (coords) {
+                return coords.length === 2; // Longitude and Latitude
+              },
+              message: "Coordinates must be an array of [longitude, latitude].",
+            },
           },
         },
       },
@@ -37,4 +43,7 @@ const cartSchema = mongoose.Schema(
   }
 );
 
-export  const Cart = mongoose.model("Cart", cartSchema);
+// Geospatial index for the `location` field
+cartSchema.index({ location: "2dsphere" });
+
+export const Cart = mongoose.model("Cart", cartSchema);
