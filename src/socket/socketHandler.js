@@ -5,11 +5,10 @@
 
 
 const handleSocketConnection = (io) => {
-  console.log("hello world ")
+ console.log("")
   console.log(socketIdMap);
   io.on("connection", (socket) => {
-    console.log(`socket Id: ${socket.id}`);
-    console.log("User got connected..............................................")
+    
     socket.onAny((event, ...args) => {
       console.log(`Event received: ${event}`, args);
     });

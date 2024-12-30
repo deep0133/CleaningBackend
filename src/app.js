@@ -2,12 +2,13 @@ import cors from "cors";
 import express from "express";
 import bookingRouter from "./routes/booking.routes.js";
 import userRouter from "./routes/user.routes.js";
-import otpRouter from "./routes/otp.router.js";
+import otpRouter from "./routes/otp.routes.js";
 import manageServiceRouter from "./routes/adminManageService.routes.js";
 import addOnsRouter from "./routes/addOns.routes.js";
 import cartRouter from "./routes/cart.routes.js";
 import { verifyStripePayment } from "./controllers/payment/verifyPaymentWebhook.js";
 import { balanceWebhook } from "./controllers/payment/balanceWebhook.js";
+import { findNearbyCleaners} from "./utils/findNearByUser.js";
 // import {
 
 //   getNearbyDummyUsers,
@@ -48,9 +49,11 @@ app.use("/api/v1/booking", bookingRouter);
 app.use("/api/v1/admin", manageServiceRouter);
 app.use("/api/v1/admin/addons", addOnsRouter);
 
+
 // Stripe webhooks (must come after other routes, but before body parsing)
 app.post("/webhook/paymentStatus", verifyStripePayment);
 app.post("/webhook/balance", balanceWebhook);
+app.post('/findNearbyCleaners', findNearbyCleaners);
 
 // Default route for unhandled paths
 app.all("*", (req, res) => {

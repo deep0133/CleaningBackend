@@ -109,46 +109,115 @@ import mongoose from 'mongoose';
 
 
 
-export async function findNearbyCleaners() {
-  try {
-    // 1. Check if there are any users with role 'cleaner'
-    // const cleanerCount = await User.countDocuments({ role: 'cleaner' });
-    // console.log(`Total number of cleaners in the database: ${cleanerCount}`);
+// export async function findNearbyCleaners() {
+//   try {
+//     // 1. Check if there are any users with role 'cleaner'
+//     // const cleanerCount = await User.countDocuments({ role: 'cleaner' });
+//     // console.log(`Total number of cleaners in the database: ${cleanerCount}`);
 
-    // if (cleanerCount === 0) {
-    //   console.log("There are no users with the role 'cleaner'. Please add some cleaner users to the database.");
-    //   return;
-    // }
+//     // if (cleanerCount === 0) {
+//     //   console.log("There are no users with the role 'cleaner'. Please add some cleaner users to the database.");
+//     //   return;
+//     // }
 
-    console.log("finding nearby cleaners..................////////////////////..........")
+//     console.log("finding nearby cleaners..................////////////////////..........")
 
-    // 2. Check if cleaners have valid location data
-    const cleanersWithLocation= await User.find(
-      {
-        location: {
-           $nearSphere: {
-              $geometry: {
-                 type : "Point",
-                 coordinates : [ 73.9667, 28.78 ]
-              },
+//     // 2. Check if cleaners have valid location data
+//     const cleanersWithLocation= await User.find(
+//       {
+//         location: {
+//            $nearSphere: {
+//               $geometry: {
+//                  type : "Point",
+//                  coordinates : [ 73.9667, 28.78 ]
+//               },
            
-              $maxDistance: 10000
-           }
-        }
-      }
-   )
-    console.log("cleanersWithLocation",cleanersWithLocation)
-    console.log(`Number of cleaners with valid location data: ${cleanersWithLocation.length}`);
+//               $maxDistance: 10000
+//            }
+//         }
+//       }
+//    )
+//     console.log("cleanersWithLocation",cleanersWithLocation)
+//     console.log(`Number of cleaners with valid location data: ${cleanersWithLocation.length}`);
 
-    if (cleanersWithLocation.length === 0) {
-      console.log("No cleaners have valid location data. Please update cleaner records with correct location information.");
-      return;
+//     if (cleanersWithLocation.length === 0) {
+//       console.log("No cleaners have valid location data. Please update cleaner records with correct location information.");
+//       return;
+//     }
+
+//     // 3. Verify geospatial index
+//     const indexes = await User.collection.indexes();
+//     const geoIndex = indexes.find(index => index.key.location === '2dsphere');
+    
+//     if (!geoIndex) {
+//       console.log("Geospatial index is missing. Creating index...");
+//       await User.collection.createIndex({ location: "2dsphere" });
+//       console.log("Geospatial index created successfully.");
+//     } else {
+//       console.log("Geospatial index exists.");
+//     }
+
+//     // 4. Test a geospatial query
+//     const testLongitude = 77.14673000000001;
+//     const testLatitude = 28.73214;
+//     const maxDistance = 10000; // 10km in meters
+
+//     const nearbyCleaners = await User.aggregate([
+//       {
+//         $geoNear: {
+//           near: {
+//             type: 'Point',
+//             coordinates: [testLongitude, testLatitude]
+//           },
+//           distanceField: 'distance',
+//           maxDistance: maxDistance,
+//           spherical: true,
+//           query: { role: 'cleaner' }
+//         }
+//       }
+//     ]);
+
+//     console.log(`Number of nearby cleaners found: ${nearbyCleaners.length}`);
+    
+//     if (nearbyCleaners.length === 0) {
+//       console.log("No nearby cleaners found. This could be due to:");
+//       console.log("1. No cleaners within the specified radius");
+//       console.log("2. Incorrect longitude/latitude values for the search");
+//       console.log("3. Incorrect longitude/latitude values stored for cleaners");
+//     } else {
+//       console.log("Nearby cleaners:");
+//       nearbyCleaners.forEach(cleaner => {
+//         console.log(`- ${cleaner.name}: ${(cleaner.distance / 1000).toFixed(2)}km away`);
+//       });
+//     }
+
+//   } catch (error) {
+//     console.error('Error during debugging:', error);
+//   } finally {
+//     mongoose.disconnect();
+//   }
+// }
+
+import sendNotification from "../socket/sendNotification.js";
+
+
+export const findNearbyCleaners = async (req, res) => {
+  try {
+    const { longitude, latitude, maxDistance = 10000 } = req.body;
+
+    // Validate input
+    if (!longitude || !latitude) {
+      return res.status(400).json({
+        message: "Longitude and latitude are required",
+      });
     }
 
-    // 3. Verify geospatial index
+    console.log("Finding nearby cleaners...");
+
+    // Verify geospatial index
     const indexes = await User.collection.indexes();
     const geoIndex = indexes.find(index => index.key.location === '2dsphere');
-    
+
     if (!geoIndex) {
       console.log("Geospatial index is missing. Creating index...");
       await User.collection.createIndex({ location: "2dsphere" });
@@ -156,21 +225,19 @@ export async function findNearbyCleaners() {
     } else {
       console.log("Geospatial index exists.");
     }
-
-    // 4. Test a geospatial query
-    const testLongitude = 77.14673000000001;
-    const testLatitude = 28.73214;
-    const maxDistance = 10000; // 10km in meters
-
+    // 77.1025
+    
+    // 28.7041
+    // Find nearby cleaners using $geoNear
     const nearbyCleaners = await User.aggregate([
       {
         $geoNear: {
           near: {
             type: 'Point',
-            coordinates: [testLongitude, testLatitude]
+            coordinates: [parseFloat(longitude), parseFloat(latitude)]
           },
           distanceField: 'distance',
-          maxDistance: maxDistance,
+          maxDistance: parseFloat(maxDistance),
           spherical: true,
           query: { role: 'cleaner' }
         }
@@ -178,25 +245,38 @@ export async function findNearbyCleaners() {
     ]);
 
     console.log(`Number of nearby cleaners found: ${nearbyCleaners.length}`);
-    
+
     if (nearbyCleaners.length === 0) {
-      console.log("No nearby cleaners found. This could be due to:");
-      console.log("1. No cleaners within the specified radius");
-      console.log("2. Incorrect longitude/latitude values for the search");
-      console.log("3. Incorrect longitude/latitude values stored for cleaners");
-    } else {
-      console.log("Nearby cleaners:");
-      nearbyCleaners.forEach(cleaner => {
-        console.log(`- ${cleaner.name}: ${(cleaner.distance / 1000).toFixed(2)}km away`);
+      return res.status(404).json({
+        message: "No nearby cleaners found",
       });
     }
+        
+       const notificationData = {
+        message: "New cleaning request",
+        address:"Delhi",
+        duration: "2 hours",
+        price: 200,
+       }
+
+    // Send notification to nearby cleaners
+
+       sendNotification(nearbyCleaners, notificationData);
+
+    // Respond with nearby cleaners
+    res.status(200).json({
+      message: "Nearby cleaners found",
+      data: nearbyCleaners,
+    });
 
   } catch (error) {
-    console.error('Error during debugging:', error);
-  } finally {
-    mongoose.disconnect();
+    console.error("Error finding nearby cleaners:", error);
+    res.status(500).json({
+      message: "An error occurred while finding nearby cleaners",
+      error: error.message,
+    });
   }
-}
+};
 
 
 
@@ -206,12 +286,6 @@ export async function findNearbyCleaners() {
 // const userLongitude = 77.1236; 
 // const userLatitude = 28.6791;   
 
-// findNearbyCleaners(userLongitude, userLatitude)
-//   .then(cleaners => {
-//     // Process the results as needed
-//   })
-//   .catch(error => {
-//     console.error('Failed to find nearby cleaners:', error);
-//   });
+
 
 

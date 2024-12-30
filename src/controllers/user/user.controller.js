@@ -8,7 +8,7 @@ import twilio from "twilio"; // Twilio for SMS
 import { sendOtp, verifyOtp } from "../../utils/opt.js";
 import jwt from 'jsonwebtoken'
 
-const verifyOtpController = asyncHandler(async (req, res) => {
+const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
   const { name, email, phoneNumber, password, role, address, category, otp, location, availability, currentBooking, rating, totalBookings, completedBookings, earnings, isOnline } = req.body;
 
   if (!phoneNumber || !otp) {
@@ -587,6 +587,6 @@ export {
   forgotPassword,
   verifyOtp,
   resetPassowrd,
-  verifyOtpController,
+  verfiyOtpAndRegister,
   deleteAddress
 };
