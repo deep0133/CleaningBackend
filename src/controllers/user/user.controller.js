@@ -6,10 +6,28 @@ import { ApiResponse } from "../../utils/apiResponse.js";
 import { Contact } from "../../models/contactSchema.js";
 import twilio from "twilio"; // Twilio for SMS
 import { sendOtp, verifyOtp } from "../../utils/opt.js";
-import jwt from 'jsonwebtoken'
+import jwt from "jsonwebtoken";
+import { DummyUser } from "../../models/dummyUserSchema.js";
 
 const verifyOtpController = asyncHandler(async (req, res) => {
-  const { name, email, phoneNumber, password, role, address, category, otp, location, availability, currentBooking, rating, totalBookings, completedBookings, earnings, isOnline } = req.body;
+  const {
+    name,
+    email,
+    phoneNumber,
+    password,
+    role,
+    address,
+    category,
+    otp,
+    location,
+    availability,
+    currentBooking,
+    rating,
+    totalBookings,
+    completedBookings,
+    earnings,
+    isOnline,
+  } = req.body;
 
   if (!phoneNumber || !otp) {
     throw new ApiError(400, "Phone number and OTP are required");
@@ -25,79 +43,80 @@ const verifyOtpController = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
 
-    // Check for existing user by email or phone number
-    const existedUser = await User.findOne({ $or: [{ phoneNumber }, { email }] });
-    if (existedUser) {
-      throw new ApiError(409, "User with this email or phoneNumber already exists");
-    }
-  
-  if (role === "cleaner" && (!category)) {
+  // Check for existing user by email or phone number
+  const existedUser = await User.findOne({ $or: [{ phoneNumber }, { email }] });
+  if (existedUser) {
+    throw new ApiError(
+      409,
+      "User with this email or phoneNumber already exists"
+    );
+  }
+
+  if (role === "cleaner" && !category) {
     throw new ApiError(400, "Category field is required for cleaners");
   }
-    
 
   // Verify OTP
   const verificationResponse = await verifyOtp(phoneNumber, otp);
 
-
-  if (!verificationResponse || verificationResponse.success===false) {
-
-    throw new ApiError(401, verificationResponse,"OTP verification failed");
+  if (!verificationResponse || verificationResponse.success === false) {
+    throw new ApiError(401, verificationResponse, "OTP verification failed");
   }
 
   const session = await mongoose.startSession();
   session.startTransaction();
- 
-   
+
   // If additional registration details are provided
 
-
-
-
-
-
-
-
-    // Create a new user with full details
-   try {
-    const user = await User.create([{
-      name,
-      email,
-      password,
-      role,
-      address,
-      phoneNumber,
-      isVerified: true
-    }], { session });
-
+  // Create a new user with full details
+  try {
+    const user = await User.create(
+      [
+        {
+          name,
+          email,
+          password,
+          role,
+          address,
+          phoneNumber,
+          isVerified: true,
+        },
+      ],
+      { session }
+    );
 
     // Create associated Cleaner record if role is cleaner
     if (role === "cleaner") {
-      if(!user._id){
-        throw new ApiError(500, "Something went wrong while registering the user");
+      if (!user._id) {
+        throw new ApiError(
+          500,
+          "Something went wrong while registering the user"
+        );
       }
-      const cleaner = await Cleaner.create([{
-        user: user._id,
-        category,
-        location,
-        availability,
-        currentBooking,
-        rating,
-        totalBookings,
-        completedBookings,
-        earnings,
-        isOnline
-      }], { session });
+      const cleaner = await Cleaner.create(
+        [
+          {
+            user: user._id,
+            category,
+            location,
+            availability,
+            currentBooking,
+            rating,
+            totalBookings,
+            completedBookings,
+            earnings,
+            isOnline,
+          },
+        ],
+        { session }
+      );
 
       if (!cleaner || cleaner.length === 0) {
         throw new ApiError(500, "Failed to create cleaner record");
       }
-
     }
 
-
     await session.commitTransaction();
-
 
     // Generate tokens
     const accessToken = user.generateAccessToken();
@@ -113,26 +132,29 @@ const verifyOtpController = asyncHandler(async (req, res) => {
     );
 
     if (!createdUser) {
-      throw new ApiError(500, "Something went wrong while registering the user");
+      throw new ApiError(
+        500,
+        "Something went wrong while registering the user"
+      );
     }
 
-    return res.status(200).json(
-      new ApiResponse(200, { accessToken, refreshToken }, " otp is verfied and User registered successfully")
-    );
-  
-
-   } catch (error) {
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { accessToken, refreshToken },
+          " otp is verfied and User registered successfully"
+        )
+      );
+  } catch (error) {
     await session.abortTransaction();
     console.error(error);
     throw error;
-   }finally {
+  } finally {
     session.endSession();
   }
-
 });
-
-
-
 
 // const register = asyncHandler(async (req, res) => {
 //   // take name email password , address , role ,phone number from the user
@@ -145,7 +167,6 @@ const verifyOtpController = asyncHandler(async (req, res) => {
 //   // send response
 //   const { name, email, phoneNumber, password, role, address, category } =
 //   req.body;
-
 
 //     // let status = null;
 //     // if (phoneNumber) {
@@ -161,8 +182,6 @@ const verifyOtpController = asyncHandler(async (req, res) => {
 //     //     throw new ApiError(500, "Failed to send OTP");
 //     //   }
 //     // }
-
-
 
 //   if (
 //     [name, email, password, role, phoneNumber].some(
@@ -187,13 +206,6 @@ const verifyOtpController = asyncHandler(async (req, res) => {
 //     throw new ApiError(400, "Category field is required for cleaners");
 //   }
 
-
-
-
-
-
-
-
 //   const user = await User.create({
 //     name,
 //     email,
@@ -210,31 +222,17 @@ const verifyOtpController = asyncHandler(async (req, res) => {
 //     });
 //   }
 
-
-
 //   const accessToken = user.generateAccessToken();
 //   const refreshToken = user.generateRefreshToken();
 
 //   user.accessToken = accessToken;
 //   user.refreshToken = refreshToken;
 
-
-
-
-
-
-
-
 //   await user.save({ validateBeforeSave: false });
-
 
 //   const createdUser = await User.findById(user._id).select(
 //     "-password -refreshToken"
 //   );
-
-
-
-
 
 //   if (!createdUser) {
 //     throw new ApiError(500, "Something went wrong while registering the user");
@@ -254,7 +252,6 @@ const verifyOtpController = asyncHandler(async (req, res) => {
 //   );
 // });
 
-
 const register = asyncHandler(async (req, res) => {
   const { phoneNumber } = req.body;
 
@@ -266,8 +263,6 @@ const register = asyncHandler(async (req, res) => {
   if (user) {
     throw new ApiError(401, "User with this number already exists");
   }
-
-
 
   if (phoneNumber) {
     try {
@@ -282,14 +277,17 @@ const register = asyncHandler(async (req, res) => {
     }
   }
 
-
-  res.status(200).json(
-    new ApiResponse(200, {}, "OTP sent successfully Do OTP verification", true)
-  );
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        {},
+        "OTP sent successfully Do OTP verification",
+        true
+      )
+    );
 });
-
-
-
 
 const login = asyncHandler(async (req, res) => {
   // take number and password from the user
@@ -335,7 +333,6 @@ const login = asyncHandler(async (req, res) => {
     new ApiResponse(
       200,
       {
-
         accessToken,
         refreshToken,
       },
@@ -364,7 +361,9 @@ const logout = asyncHandler(async (req, res) => {
   res.json(new ApiResponse(200, {}, "User logged out successfully"));
 });
 const myProfile = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id).select("-password -accessToken -refreshToken -location ");
+  const user = await User.findById(req.user._id).select(
+    "-password -accessToken -refreshToken -location "
+  );
 
   console.log("user/........", user);
   res.status(200).json({ success: true, user });
@@ -503,22 +502,20 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const user = await User.findOne({ phoneNumber });
 
   if (!user) {
-    throw new ApiError(400, "user with this number does not exists")
+    throw new ApiError(400, "user with this number does not exists");
   }
 
   if (!user.isOtpVerified) {
-    throw new ApiError(400, "user is not verified ")
+    throw new ApiError(400, "user is not verified ");
   }
 
   user.password = newPassword;
-  await user.save()
+  await user.save();
 
-  res.status(200)
-    .json(new ApiResponse(200, {}, "Password is updated successfully"))
-
-
-})
-
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password is updated successfully"));
+});
 
 // Reset Password --- by JWT TOken --- this will only use when we send token through jwt.
 const resetPassowrd = asyncHandler(async (req, res, next) => {
@@ -560,18 +557,25 @@ const deleteAddress = asyncHandler(async (req, res) => {
     throw new ApiError(400, "user does not exists");
   }
 
-  if (index === undefined || typeof index !== 'number' || index < 0 || index >= user.address.length) {
-    throw new ApiError(400, "Index should be a valid integer within the range of the addresses array.");
+  if (
+    index === undefined ||
+    typeof index !== "number" ||
+    index < 0 ||
+    index >= user.address.length
+  ) {
+    throw new ApiError(
+      400,
+      "Index should be a valid integer within the range of the addresses array."
+    );
   }
 
   user.address.splice(index, 1);
   await user.save();
 
-  res.status(200)
-    .json(new ApiResponse(200, {}, "address is removed successfully", true))
-
-
-})
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, "address is removed successfully", true));
+});
 
 export {
   myProfile,
@@ -588,5 +592,11 @@ export {
   verifyOtp,
   resetPassowrd,
   verifyOtpController,
-  deleteAddress
+  deleteAddress,
 };
+
+// get all users:
+export const getAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.find();
+  res.status(200).json({ success: true, users });
+});
