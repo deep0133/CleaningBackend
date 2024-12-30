@@ -8,8 +8,6 @@ import addOnsRouter from "./routes/addOns.routes.js";
 import cartRouter from "./routes/cart.routes.js";
 import { verifyStripePayment } from "./controllers/payment/verifyPaymentWebhook.js";
 import { balanceWebhook } from "./controllers/payment/balanceWebhook.js";
-import { findNearbyCleaner } from "./utils/findNearByUser.js";
-import { DummyUser } from "./models/dummyUserSchema.js";
 
 const app = express();
 

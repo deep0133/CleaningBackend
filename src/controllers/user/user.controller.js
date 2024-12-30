@@ -4,10 +4,8 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/apiError.js";
 import { ApiResponse } from "../../utils/apiResponse.js";
 import { Contact } from "../../models/contactSchema.js";
-import twilio from "twilio"; // Twilio for SMS
 import { sendOtp, verifyOtp } from "../../utils/opt.js";
 import jwt from "jsonwebtoken";
-import { DummyUser } from "../../models/dummyUserSchema.js";
 
 const verifyOtpController = asyncHandler(async (req, res) => {
   const {
