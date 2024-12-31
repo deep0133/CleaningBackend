@@ -1,15 +1,19 @@
-import mongoose from "mongoose"
+import mongoose from "mongoose";
 
-const adminWalletSchema=new mongoose.Schema({
-    total:{
-        type:Number,
-        required:true,
+const adminWalletSchema = new mongoose.Schema({
+  total: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  payementHistory: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Payment",
+      required: true,
     },
-    payementHistory:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:'BookingService'
-    }
-})
+  ],
+});
 
-const adminWallet=mongoose.model('adminWallet',adminWalletSchema)
-module.exports =adminWallet;
+const adminWallet = mongoose.model("adminWallet", adminWalletSchema);
+export default adminWallet;

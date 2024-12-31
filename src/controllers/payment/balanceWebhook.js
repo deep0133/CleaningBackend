@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import adminWallet from "../../models/adminWallet/adminWallet.model.js";
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 // STRIPE_SERCRET_KEY
@@ -25,6 +26,11 @@ export const balanceWebhook = asyncHandler(async (request, response) => {
     case "balance.available":
       const balance = event.data.object; // The balance details
       console.log("Balance available:", balance);
+      // const adminWallet = await adminWallet.findOne();
+
+      // adminWallet.total += balance;
+      // History data : ?
+      // await adminWallet.save();
 
       // You can handle balance updates here (e.g., log it, notify admins, etc.)
       break;
