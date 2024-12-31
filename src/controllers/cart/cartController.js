@@ -5,15 +5,18 @@ import ServiceModel from "../../models/Services/services.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
 export const getAllCartItems = asyncHandler(async (req, res) => {
-  const cartItems = await Cart.findOne({ User: req.user._id }).populate({
+  let cartItems = await Cart.findOne({ User: req.user._id }).populate({
     path: "cart.categoryId",
     select: "name -_id",
   });
 
-  const updatedCartItems = cartItems.cart.map((item) => ({
-    ...item.toObject(),
-    categoryId: item.categoryId.name,
-  }));
+  let updatedCartItems = {
+    ...cartItems.toObject(),
+    cart: cartItems.cart.map((item) => ({
+      ...item.toObject(),
+      categoryId: item.categoryId.name,
+    })),
+  };
 
   res.status(200).json({
     success: true,
