@@ -64,7 +64,7 @@ export const createBooking = asyncHandler(async (req, res) => {
     // Createig Order
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalCartPrice * 100,
-      currency: "INR",
+      currency: "USD",
       metadata: {
         bookingModelId: booking._id.toString(),
       },
