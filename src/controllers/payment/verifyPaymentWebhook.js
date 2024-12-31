@@ -13,6 +13,11 @@ async function updateBookingStatus(bookingId, updates) {
   try {
     const booking = await BookingService.findById(bookingId);
 
+    console.log(
+      "-----------booking found--- in udpateBOokingStatus------:",
+      booking
+    );
+
     if (!booking || !booking.PaymentId) {
       throw new Error("No booking found for provided ID");
     }
@@ -46,6 +51,8 @@ async function updateBookingStatus(bookingId, updates) {
 
 async function handleEvent(eventType, paymentIntent) {
   const bookingId = paymentIntent.metadata.bookingModelId;
+
+  console.log("-----------bookingId---------", bookingId);
 
   const statusUpdates = {
     "payment_intent.amount_capturable_updated": {

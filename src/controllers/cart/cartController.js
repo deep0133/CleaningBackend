@@ -4,37 +4,26 @@ import AddOnModel from "../../models/Services/addons.model.js";
 import ServiceModel from "../../models/Services/services.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
-// Get Cart : Get all items in the cart
 export const getAllCartItems = asyncHandler(async (req, res) => {
-  const cartItems = await Cart.findOne({ User: req.user._id });
+  const cartItems = await Cart.findOne({ User: req.user._id }).populate({
+    path: "cart.categoryId",
+    select: "name -_id",
+  });
 
-  const bookedCart = await BookingService.find({
-    User: req.user._id,
-    "CartData.TimeSlot.start": { $gt: new Date() },
-  }).populate("PaymentId");
-
-  const upcommingBookig = bookedCart.filter(
-    (item) => item.PaymentId.PaymentStatus === "paid"
-  );
+  const updatedCartItems = cartItems.cart.map((item) => ({
+    ...item.toObject(),
+    categoryId: item.categoryId.name,
+  }));
 
   res.status(200).json({
     success: true,
-    cartItems: cartItems,
-    bookedCart: upcommingBookig,
+    cartItems: updatedCartItems,
   });
 });
 
-// Add to Cart : Add a new item to the cart
 export const addToCart = asyncHandler(async (req, res) => {
-  const {
-    categoryId, // Service ID
-    timeSlot, // { start: Date, end: Date }
-    userAddress,
-    location, // { type: "Point", coordinates: [longitude, latitude] }
-    addOns = [],
-  } = req.body;
+  const { categoryId, timeSlot, userAddress, location, addOns = [] } = req.body;
 
-  // Validate required fields
   if (!categoryId || !timeSlot || !userAddress || !location) {
     return res.status(400).json({
       success: false,
@@ -56,7 +45,6 @@ export const addToCart = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if the start time is in the future
   if (new Date(timeSlot.start) <= new Date()) {
     return res.status(400).json({
       success: false,
@@ -64,7 +52,6 @@ export const addToCart = asyncHandler(async (req, res) => {
     });
   }
 
-  // Step 2: Check if a service exists for the given category
   const service = await ServiceModel.findById(categoryId);
   if (!service) {
     return res.status(404).json({
@@ -73,13 +60,10 @@ export const addToCart = asyncHandler(async (req, res) => {
     });
   }
 
-  // Step 3: Calculate the total price based on the service price and add-ons
   let totalPrice = service.pricePerHour;
 
-  // Add the price of selected add-ons
   if (addOns.length > 0) {
-    // Filter the add-ons to ensure they are valid for the current service
-    const validAddOnIds = service.addOns.map((addOn) => addOn.toString()); // Assuming `service.addOns` is an array of valid add-on IDs
+    const validAddOnIds = service.addOns.map((addOn) => addOn.toString());
     const invalidAddOns = addOns.filter(
       (addOnId) => !validAddOnIds.includes(addOnId)
     );
@@ -93,22 +77,18 @@ export const addToCart = asyncHandler(async (req, res) => {
       });
     }
 
-    // Calculate the total price for the valid add-ons
     const validAddOns = await AddOnModel.find({ _id: { $in: addOns } });
     totalPrice += validAddOns.reduce((sum, addOn) => sum + addOn.price, 0);
   }
 
-  // Calculate duration in minutes
   const duration = Math.round(
     (new Date(timeSlot.end) - new Date(timeSlot.start)) / (1000 * 60)
   );
 
   try {
-    // Step 4 : Check if the user already has a cart
     const existingCart = await Cart.findOne({ User: req.user._id });
 
     if (existingCart) {
-      // Ensure the new item is not a duplicate
       const duplicateItem = await Cart.findOne({
         User: req.user._id,
         cart: {
@@ -129,7 +109,6 @@ export const addToCart = asyncHandler(async (req, res) => {
         });
       }
 
-      // Append the new item to the cart array
       existingCart.cart.push({
         categoryId,
         TimeSlot: timeSlot,
@@ -139,7 +118,7 @@ export const addToCart = asyncHandler(async (req, res) => {
         UserAddress: userAddress,
         Location: location,
       });
-      // Save the updated cart
+
       const updatedCart = await existingCart.save();
 
       res.status(201).json({
@@ -148,7 +127,6 @@ export const addToCart = asyncHandler(async (req, res) => {
         updatedCart,
       });
     } else {
-      // Create a new cart if the user does not have one
       const newCart = await Cart.create({
         User: req.user._id,
         cart: [
@@ -178,12 +156,10 @@ export const addToCart = asyncHandler(async (req, res) => {
   }
 });
 
-// Update Cart : cartId -->> id of subdocument in cart array
 export const updateCart = asyncHandler(async (req, res) => {
-  const { cartId } = req.params; // user cart id
+  const { cartId } = req.params;
   const { addOns, timeSlot } = req.body;
 
-  // Find the cart item
   const cart = await Cart.findOne({
     User: req.user._id,
   });
@@ -204,7 +180,6 @@ export const updateCart = asyncHandler(async (req, res) => {
     });
   }
 
-  // Validate time slot if provided
   if (timeSlot) {
     if (!timeSlot.start || !timeSlot.end) {
       return res.status(400).json({
@@ -220,7 +195,6 @@ export const updateCart = asyncHandler(async (req, res) => {
       });
     }
 
-    // Check if the start time is in the future
     if (new Date(timeSlot.start) <= new Date()) {
       return res.status(400).json({
         success: false,
@@ -229,13 +203,12 @@ export const updateCart = asyncHandler(async (req, res) => {
     }
 
     cartItem.TimeSlot = timeSlot;
-    // Recalculate duration
+
     cartItem.Duration = Math.round(
       (new Date(timeSlot.end) - new Date(timeSlot.start)) / (1000 * 60)
     );
   }
 
-  // Step 2: Check if a service exists for the given category
   const service = await ServiceModel.findById(cartItem.categoryId);
   if (!service) {
     return res.status(404).json({
@@ -246,9 +219,8 @@ export const updateCart = asyncHandler(async (req, res) => {
 
   let totalPrice = service.pricePerHour;
 
-  // Update add-ons if provided
   if (addOns) {
-    const validAddOnIds = service.addOns.map((addOn) => addOn.toString()); // Assuming `service.addOns` is an array of valid add-on IDs
+    const validAddOnIds = service.addOns.map((addOn) => addOn.toString());
     const invalidAddOns = addOns.filter(
       (addOnId) => !validAddOnIds.includes(addOnId)
     );
@@ -262,7 +234,6 @@ export const updateCart = asyncHandler(async (req, res) => {
       });
     }
 
-    // Calculate the total price for the valid add-ons
     const validAddOns = await AddOnModel.find({ _id: { $in: addOns } });
     totalPrice += validAddOns.reduce((sum, addOn) => sum + addOn.price, 0);
 
@@ -270,7 +241,6 @@ export const updateCart = asyncHandler(async (req, res) => {
     cartItem.TotalPrice = totalPrice;
   }
 
-  // Save the updated cart item
   const updatedCart = await cart.save();
 
   res.status(200).json({
@@ -280,11 +250,9 @@ export const updateCart = asyncHandler(async (req, res) => {
   });
 });
 
-// Delete Cart : Remove a cart item from the cart array by cartId
 export const deleteCart = asyncHandler(async (req, res) => {
   const { cartId } = req.params;
 
-  // Find the cart item
   const cart = await Cart.findOne({
     User: req.user._id,
   });
@@ -297,7 +265,6 @@ export const deleteCart = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if the user owns this cart item
   if (cart.User.toString() !== req.user._id.toString()) {
     return res.status(403).json({
       success: false,
@@ -305,7 +272,6 @@ export const deleteCart = asyncHandler(async (req, res) => {
     });
   }
 
-  // Remove the cart item using the `pull` method
   cart.cart = cart.cart.filter((item) => item._id.toString() !== cartId);
 
   await cart.save();
