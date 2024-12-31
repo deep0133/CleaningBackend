@@ -11,6 +11,21 @@ const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 async function updateBookingStatus(bookingId, updates) {
   try {
+    console.log(
+      "---------------------------------------------------------------------"
+    );
+    console.log(
+      "---------------------------------------------------------------------"
+    );
+    console.log(
+      "----------------------Start updating Booking Status------------------"
+    );
+    console.log(
+      "---------------------------------------------------------------------"
+    );
+    console.log(
+      "---------------------------------------------------------------------"
+    );
     console.log("----------bookingId-------------: ", bookingId);
     const booking = await BookingService.findById(bookingId);
 
@@ -50,6 +65,7 @@ async function updateBookingStatus(bookingId, updates) {
     // Searching Cleaners and send notification to them
   } catch (error) {
     console.error("Error updating booking:", error.message);
+    return new Error("Error updating booking: " + error.message);
   }
 }
 
