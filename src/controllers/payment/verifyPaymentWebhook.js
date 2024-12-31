@@ -3,6 +3,9 @@ import { BookingService } from "../../models/Client/booking.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { Cart } from "../../models/Client/cart.model.js";
 import { PaymentModel } from "../../models/Client/paymentModel.js";
+import { findNearbyCleaners } from "../../utils/findNearByUser.js";
+import { NotificationModel } from "../../models/Notification/notificationSchema.js";
+import sendNotification from "../../socket/sendNotification.js";
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
@@ -10,7 +13,9 @@ const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 async function updateBookingStatus(bookingId, updates) {
   try {
-    const booking = await BookingService.findById(bookingId);
+    console.log("------------updateBookingStatus------------");
+
+    const booking = await BookingService.findById(bookingId).populate("Cleaner");
 
     if (!booking || !booking.PaymentId) {
       throw new Error("No booking found for provided ID");
@@ -32,6 +37,23 @@ async function updateBookingStatus(bookingId, updates) {
 
     cart.cart = [];
     await cart.save();
+
+
+
+    // find cleaners and send Notification to the cleaners
+    const notificationData = {
+      cleanerId: booking.Cleaner._id,
+      bookingId: bookingId,
+      message: "New Booking has been created",
+    }
+
+    const notification = await NotificationModel.create(notificationData);
+
+
+    console.log("location", booking.cartData[0].Location.coordinates[0], booking.cartData[0].Location.coordinates[1])
+
+    await findNearbyCleaners(booking.cartData[0].Location.coordinates[0], booking.cartData[0].Location.coordinates[1])
+
   } catch (error) {
     console.error("Error updating booking:", error.message);
   }
@@ -90,6 +112,8 @@ export const verifyStripePayment = asyncHandler(async (request, response) => {
   }
 
   // Notification Send to Cleaner and store data in notification model
+
+
 
   // Acknowledge receipt of the event
   response.status(200).send("Webhook event processed");

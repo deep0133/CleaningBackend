@@ -38,5 +38,3 @@ notificationSchema.methods.isNotificationExpired = function () {
 };
 
 export const NotificationModel = model("CleanerNotification", notificationSchema);
-
-;

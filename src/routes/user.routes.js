@@ -18,6 +18,8 @@ import {
 import { isAdmin, isAuthenticated } from "../middleware/authenticateUser.js";
 const router = Router();
 
+// router.post("/all", getAllUsers);
+
 // Login, Signup Route & Logout
 router.post("/register", register);
 router.post("/verify",verfiyOtpAndRegister);
@@ -32,14 +34,14 @@ router.get("/all", allUsers);
 router.post("/add/address", isAuthenticated, addNewAddress);
 router.post("/update/address", isAuthenticated, updateAddress);
 router.post("/change/password", isAuthenticated, changePassword);
-router.post("/deleteAddress",isAuthenticated,deleteAddress)
+router.post("/deleteAddress", isAuthenticated, deleteAddress);
 
 // Contact Us : Help & Support
 router.get("/contact", isAuthenticated, isAdmin, getAllContact);
 router.post("/contact", isAuthenticated, submitContactForm);
 
 // Forgot Password & Reset Password
-router.post("/forgot/password",forgotPassword);
+router.post("/forgot/password", forgotPassword);
 router.post("/reset/password", verifyOtp);
 
 export default router;

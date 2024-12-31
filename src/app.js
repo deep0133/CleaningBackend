@@ -8,7 +8,7 @@ import addOnsRouter from "./routes/addOns.routes.js";
 import cartRouter from "./routes/cart.routes.js";
 import { verifyStripePayment } from "./controllers/payment/verifyPaymentWebhook.js";
 import { balanceWebhook } from "./controllers/payment/balanceWebhook.js";
-import { findNearbyCleaners} from "./utils/findNearByUser.js";
+import { findNearbyCleanersController} from "./utils/findNearByUser.js";
 // import {
 
 //   getNearbyDummyUsers,
@@ -37,10 +37,6 @@ app.use(
 
 app.use("/images", express.static("uploads"));
 
-// app.get("/", findNearbyCleaner);
-// app.get("/addDummyData", addDummyData);
-// app.post("/getNearbyDummyUsers", getNearbyDummyUsers);
-
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/otp", otpRouter);
 app.use("/api/v1/cart", cartRouter);
@@ -53,7 +49,7 @@ app.use("/api/v1/admin/addons", addOnsRouter);
 // Stripe webhooks (must come after other routes, but before body parsing)
 app.post("/webhook/paymentStatus", verifyStripePayment);
 app.post("/webhook/balance", balanceWebhook);
-app.post('/findNearbyCleaners', findNearbyCleaners);
+app.post('/findNearbyCleaners', findNearbyCleanersController);
 
 // Default route for unhandled paths
 app.all("*", (req, res) => {

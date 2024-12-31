@@ -6,9 +6,9 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { Cart } from "../../models/Client/cart.model.js";
 import { PaymentModel } from "../../models/Client/paymentModel.js";
 import {User} from "../../models/user.model.js"
-// import { findNearbyCleaner } from "../../utils/findNearByUser.js";
+
 import sendNotification from "../../socket/sendNotification.js";
-// import { NotificationModel } from "../../models/Notification/notificationSchema.js";
+
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
