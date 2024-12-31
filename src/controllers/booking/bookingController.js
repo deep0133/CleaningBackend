@@ -5,7 +5,7 @@ import { BookingService } from "../../models/Client/booking.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { Cart } from "../../models/Client/cart.model.js";
 import { PaymentModel } from "../../models/Client/paymentModel.js";
-import {User} from "../../models/user.model.js"
+import { User } from "../../models/user.model.js";
 // import { findNearbyCleaner } from "../../utils/findNearByUser.js";
 import sendNotification from "../../socket/sendNotification.js";
 // import { NotificationModel } from "../../models/Notification/notificationSchema.js";
@@ -16,7 +16,6 @@ export const createBooking = asyncHandler(async (req, res) => {
   const { cartId } = req.body;
 
   const cart = await Cart.findById(cartId);
-  console.log("location of the user who booked cart..",cart.cart.Location.coordinates);
 
   if (cart === null) {
     return res.status(404).json({ success: false, message: "Cart not found" });
@@ -88,23 +87,6 @@ export const createBooking = asyncHandler(async (req, res) => {
 
     // Save booking to the database within a transaction
     await booking.save({ session });
-
-    const notificationData  =  {
-    location : cart.cart.Location.coordinates,
-    category : cart.cart[0].Category,
-    bookingId : booking._id,
-    price :cart.TotalPrice,
-    address:cart.UserAddress
-    }
-    
-    const cleaners =await  findNearbyCleaner(cart.cart.Location.coordinates[0],cart.cart.Location.coordinates[1]);
-
-    console.log("................cleaners",cleaners);
-    console.log("..........notification data.............................",notificationData);
-
-    sendNotification(cleaners,notificationData);
-    
-  
 
     // Commit the transaction
     await session.commitTransaction();

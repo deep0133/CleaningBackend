@@ -3,6 +3,7 @@ import { BookingService } from "../../models/Client/booking.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { Cart } from "../../models/Client/cart.model.js";
 import { PaymentModel } from "../../models/Client/paymentModel.js";
+import AdminWallet from "../../models/adminWallet/adminWallet.model.js";
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
@@ -22,7 +23,11 @@ async function updateBookingStatus(bookingId, updates) {
 
     await paymentModel.save();
 
-    booking.PaymentId.PaymentStatus = updates.PaymentStatus;
+    const adminWallet = await AdminWallet.findOne({});
+    adminWallet.total += parseInt(paymentModel.PaymentValue);
+    adminWallet.payementHistory.push(paymentModel._id);
+
+    await adminWallet.save();
 
     const cart = await Cart.findOne({ User: booking.User });
 
@@ -32,6 +37,8 @@ async function updateBookingStatus(bookingId, updates) {
 
     cart.cart = [];
     await cart.save();
+
+    // Searching Cleaners and send notification to them
   } catch (error) {
     console.error("Error updating booking:", error.message);
   }
@@ -39,8 +46,6 @@ async function updateBookingStatus(bookingId, updates) {
 
 async function handleEvent(eventType, paymentIntent) {
   const bookingId = paymentIntent.metadata.bookingModelId;
-
-  console.log("------------Handle Event---metadata---------", bookingId);
 
   const statusUpdates = {
     "payment_intent.amount_capturable_updated": {
