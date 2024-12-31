@@ -25,7 +25,7 @@ async function updateBookingStatus(bookingId, updates) {
 
     console.log("-----------payment saved in payment schema---------");
 
-    const adminWallet = await AdminWallet.findOne({});
+    let adminWallet = await AdminWallet.findOne({});
     // Check if the admin wallet exists
     if (!adminWallet) {
       // If not, create a new one
