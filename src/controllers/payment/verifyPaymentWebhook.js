@@ -13,11 +13,6 @@ async function updateBookingStatus(bookingId, updates) {
   try {
     const booking = await BookingService.findById(bookingId);
 
-    console.log(
-      "-----------booking found--- in udpateBOokingStatus------:",
-      booking
-    );
-
     if (!booking || !booking.PaymentId) {
       throw new Error("No booking found for provided ID");
     }
@@ -28,11 +23,19 @@ async function updateBookingStatus(bookingId, updates) {
 
     await paymentModel.save();
 
+    console.log("-----------payment saved in payment schema---------");
+
     const adminWallet = await AdminWallet.findOne({});
-    adminWallet.total += parseInt(paymentModel.PaymentValue);
+    // Check if the admin wallet exists
+    if (!adminWallet) {
+      // If not, create a new one
+      adminWallet = new AdminWallet();
+    }
+    adminWallet.total += parseInt(paymentModel.PaymentValue, 10);
     adminWallet.payementHistory.push(paymentModel._id);
 
     await adminWallet.save();
+    console.log("-----------adminWallet updated---------");
 
     const cart = await Cart.findOne({ User: booking.User });
 
@@ -40,6 +43,7 @@ async function updateBookingStatus(bookingId, updates) {
       throw new Error("No cart found for provided ID");
     }
 
+    console.log("-----------cart updating---------");
     cart.cart = [];
     await cart.save();
 
