@@ -6,7 +6,7 @@ const adminWalletSchema = new mongoose.Schema({
     required: true,
     default: 0,
   },
-  payementHistory: [
+  paymentHistory: [
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Payment",

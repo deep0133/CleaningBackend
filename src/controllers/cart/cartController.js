@@ -10,6 +10,20 @@ export const getAllCartItems = asyncHandler(async (req, res) => {
     select: "name -_id",
   });
 
+  if (!cartItems) {
+    return res.status(200).json({
+      success: true,
+      cartItems,
+    });
+  }
+
+  if (cartItems.cart.length === 0) {
+    return res.status(200).json({
+      success: true,
+      cartItems,
+    });
+  }
+
   let updatedCartItems = {
     ...cartItems.toObject(),
     cart: cartItems.cart.map((item) => ({
