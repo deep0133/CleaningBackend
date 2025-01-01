@@ -8,11 +8,7 @@ import addOnsRouter from "./routes/addOns.routes.js";
 import cartRouter from "./routes/cart.routes.js";
 import { verifyStripePayment } from "./controllers/payment/verifyPaymentWebhook.js";
 import { balanceWebhook } from "./controllers/payment/balanceWebhook.js";
-import { findNearbyCleanersController} from "./utils/findNearByUser.js";
-// import {
-
-//   getNearbyDummyUsers,
-// } from "./controllers/user/user.controller.js";
+import walletRouter from "./routes/adminWallet.routes.js";
 
 const app = express();
 
@@ -44,7 +40,7 @@ app.use("/api/v1/booking", bookingRouter);
 
 app.use("/api/v1/admin", manageServiceRouter);
 app.use("/api/v1/admin/addons", addOnsRouter);
-
+app.use("/api/v1/admin/wallet", walletRouter);
 
 // Stripe webhooks (must come after other routes, but before body parsing)
 app.post("/webhook/paymentStatus", verifyStripePayment);

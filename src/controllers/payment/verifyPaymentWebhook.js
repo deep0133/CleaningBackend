@@ -11,12 +11,35 @@ const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 async function updateBookingStatus(bookingId, updates) {
   try {
+<<<<<<< HEAD
     console.log("------------updateBookingStatus------------");
 
     const booking = await BookingService.findById(bookingId).populate("Cleaner");
+=======
+    console.log(
+      "---------------------------------------------------------------------"
+    );
+    console.log(
+      "---------------------------------------------------------------------"
+    );
+    console.log(
+      "----------------------Start updating Booking Status------------------"
+    );
+    console.log(
+      "---------------------------------------------------------------------"
+    );
+    console.log(
+      "---------------------------------------------------------------------"
+    );
+    console.log("----------bookingId-------------: ", bookingId);
+    const booking = await BookingService.findById(bookingId);
+>>>>>>> 78d363ba6452a07153ccc1f424db8f7391116864
+
+    console.log("----------booking data-------------: ", booking);
 
     if (!booking || !booking.PaymentId) {
       throw new Error("No booking found for provided ID");
+      return;
     }
 
     const paymentModel = await PaymentModel.findById(booking.PaymentId);
@@ -25,8 +48,6 @@ async function updateBookingStatus(bookingId, updates) {
 
     await paymentModel.save();
 
-    console.log("-----------payment saved in payment schema---------");
-
     let adminWallet = await AdminWallet.findOne({});
     // Check if the admin wallet exists
     if (!adminWallet) {
@@ -34,10 +55,9 @@ async function updateBookingStatus(bookingId, updates) {
       adminWallet = new AdminWallet();
     }
     adminWallet.total += parseInt(paymentModel.PaymentValue, 10);
-    adminWallet.payementHistory.push(paymentModel._id);
+    adminWallet.paymentHistory.push(paymentModel._id);
 
     await adminWallet.save();
-    console.log("-----------adminWallet updated---------");
 
     const cart = await Cart.findOne({ User: booking.User });
 
@@ -45,20 +65,18 @@ async function updateBookingStatus(bookingId, updates) {
       throw new Error("No cart found for provided ID");
     }
 
-    console.log("-----------cart updating---------");
     cart.cart = [];
     await cart.save();
 
     // Searching Cleaners and send notification to them
   } catch (error) {
     console.error("Error updating booking:", error.message);
+    return new Error("Error updating booking: " + error.message);
   }
 }
 
 async function handleEvent(eventType, paymentIntent) {
   const bookingId = paymentIntent.metadata.bookingModelId;
-
-  console.log("-----------bookingId---------", bookingId);
 
   const statusUpdates = {
     "payment_intent.amount_capturable_updated": {
