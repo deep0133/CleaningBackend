@@ -22,14 +22,9 @@ const handleSocketConnection = (io) => {
 
          console.log("...................cleaner get connected.................")
 
-      // console.log(`Cleaner ${cleanerId} registered.`);
-
-      // Store the socket ID for this cleaner in the socketIdMap
       socketIdMap[cleanerId] = socket.id;
       
-      // console.log(".....socketIdMap........",socketIdMap);
-      
-      // Notify all connected clients when a new cleaner registers
+
       io.emit("notification", `Cleaner ${cleanerId} has registered. <><><><><><><><><><`);
     });
 

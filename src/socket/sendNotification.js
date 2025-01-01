@@ -7,7 +7,7 @@ const sendNotification = (cleaners, notificationData) => {
 console.log("................................send Notification is called .....................")
 // console.log("cleaners...............",cleaners)
     const io = getSocketIO();
-    console.log("socketId map ..........................",socketIdMap)
+ 
     const socketIds = Object.values(socketIdMap);
     for(let i=0;i<socketIds.length;i++){
       let socketId = socketIds[i];

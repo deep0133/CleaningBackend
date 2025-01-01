@@ -8,6 +8,7 @@ const notificationSchema = new Schema({
   bookingId: {
     type: Schema.Types.ObjectId,
     ref: "Booking", // Ensure the model name matches your Booking model
+  
     // required: true,
   },
   message: {

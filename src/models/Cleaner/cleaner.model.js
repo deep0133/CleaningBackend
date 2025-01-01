@@ -48,6 +48,12 @@ const cleaner = new Schema(
       type: Boolean,
       default: false,
     },
+    accountDetail:{
+      accountNumber:String,
+      accountName:String,
+      bankName:String,
+    },
+    routingNumber:String,
   },
   {
     timestamps: true,

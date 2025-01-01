@@ -1,15 +1,16 @@
 
 import { User } from "../models/user.model.js";
 import sendNotification from "../socket/sendNotification.js";
-import {asyncHandler} from '../utils/asyncHandler.js';
-import {ApiError} from '../utils/ApiError.js';
-import {ApiResponse} from '../utils/ApiResponse.js';
-import {BookingService} from '../models/Client/booking.model.js';
-import {NotificationModel} from '../models/Notification/notificationSchema.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
+import { ApiError } from '../utils/ApiError.js';
+import { ApiResponse } from '../utils/ApiResponse.js';
+import { BookingService } from '../models/Client/booking.model.js';
+import { NotificationModel } from '../models/Notification/notificationSchema.js';
+import { socketIdMap } from '../socket/socketHandler.js';
 
-export const findNearbyCleaners = async (longitude,latitude) => {
+export const findNearbyCleaners = async (longitude, latitude) => {
   try {
-    
+
 
     // Validate input
     if (!longitude || !latitude) {
@@ -32,16 +33,16 @@ export const findNearbyCleaners = async (longitude,latitude) => {
       console.log("Geospatial index exists.");
     }
     // 77.1025
-    
+
     // 28.7041
-    const maxRadius = 10000; 
+    const maxRadius = 10000;
     // Find nearby cleaners using $geoNear
     const nearbyCleaners = await User.aggregate([
       {
         $geoNear: {
           near: {
             type: 'Point',
-            coordinates: [77.1025,28.7041]
+            coordinates: [77.1025, 28.7041]
           },
           distanceField: 'distance',
           maxDistance: parseFloat(10000), // 10km in meters
@@ -54,27 +55,28 @@ export const findNearbyCleaners = async (longitude,latitude) => {
 
 
     console.log(`Number of nearby cleaners found: ${nearbyCleaners.length}`);
+    console.log("socketIdMap data ", socketIdMap)
 
     if (nearbyCleaners.length === 0) {
       return res.status(404).json({
         message: "No nearby cleaners found",
       });
     }
-        
-       const notificationData = {
-        message: "New cleaning request",
-        address:"Delhi",
-        duration: "2 hours",
-        price: 200,
-       }
+
+    const notificationData = {
+      message: "New cleaning request",
+      address: "Delhi",
+      duration: "2 hours",
+      price: 200,
+    }
 
     // Send notification to nearby cleaners
 
-       sendNotification(nearbyCleaners, notificationData);
+    sendNotification(nearbyCleaners, notificationData);
 
   } catch (error) {
     console.error("Error finding nearby cleaners:", error);
-    
+
   }
 };
 
@@ -82,8 +84,8 @@ export const findNearbyCleaners = async (longitude,latitude) => {
 export const findNearbyCleanersController = async (req, res) => {
   try {
     const { longitude, latitude,
-      // bookingId
-     } = req.body;
+      bookingId
+    } = req.body;
 
     // Validate input
     if (!longitude || !latitude) {
@@ -91,11 +93,12 @@ export const findNearbyCleanersController = async (req, res) => {
         message: "Longitude and latitude are required",
       });
     }
-     
-  //  if(!bookingId){
-  //    throw new ApiError(400,'Booking Id is required');
-  //   }
-    console.log("Finding nearby cleaners...");
+
+    if (!bookingId) {
+      throw new ApiError(400, 'Booking Id is required');
+    }
+
+
 
     // Verify geospatial index
     const indexes = await User.collection.indexes();
@@ -116,20 +119,20 @@ export const findNearbyCleanersController = async (req, res) => {
         $geoNear: {
           near: {
             type: 'Point',
-            coordinates: [77.1025,28.7041]
+            coordinates: [77.1025, 28.7041]
           },
           distanceField: 'distance',
           maxDistance: parseFloat(10000), // 10km in meters
           spherical: true,
           query: { role: 'cleaner' }
-        }
-      }
-    ]);
-  
-    
-    
+        },
 
-   
+      },
+      {
+        $project: { _id: 1 }
+      }
+
+    ]);
 
     if (nearbyCleaners.length === 0) {
       return res.status(404).json({
@@ -137,35 +140,42 @@ export const findNearbyCleanersController = async (req, res) => {
       });
     }
 
-    console.log("---------Nearby------- cleaners----- found-------:", nearbyCleaners);
 
-    // Notification data
+    const bookingDetail = await BookingService.findById(bookingId)
+    console.log("bookingDetail...............", bookingDetail)
+
+    // console.log(bookingDetail.Duration, bookingDetail.TotalPrice, bookingDetail.UserAddress)
+
+    const notificationExists = await NotificationModel.findOne({ bookingId: bookingId });
+
+    console.log("notificationExists...............", notificationExists)
+
     const notificationData = {
-      //  bookingId,
-       message: "New cleaning request",
-
-    };
-
-    // const booking = await BookingService.findById(bookingId);
-
-    // if(!booking){
-    //   throw new ApiError(404,'Booking not found');
-    // }
+      message: "New cleaning request",
+      // duration: bookingDetail.cartData[0].Duration,
+      // price: bookingDetail.cartData[0].TotalPrice,
+      // address: bookingDetail.cartData[0].UserAddress,
+    }
 
 
+    if (Object.keys(socketIdMap).length>0) {
 
-    await NotificationModel.create({
-      // cleanerId: nearbyCleaners[0]._id,
-      // bookingId: bookingId,
-      message: notificationData.message,
-    });
-    
+      sendNotification(nearbyCleaners, notificationData);
+    }
+    const cleanerIds = nearbyCleaners.map(cleaner => cleaner._id.toString());
+
+    const notifications = cleanerIds.map((cleanerId) => ({
+      cleanerId,
+      bookingId,
+      message: "New cleaning request",// Mark as read if the cleaner is connected
+      timestamp: new Date(),
+      isExpire: false,
+    }));
 
 
 
+    await NotificationModel.insertMany(notifications);
 
-    // Send notification to nearby cleaners
-    sendNotification(nearbyCleaners, notificationData);
 
     return res.status(200).json({
       message: "Notifications sent to nearby cleaners",

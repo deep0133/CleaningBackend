@@ -3,9 +3,7 @@ import { BookingService } from "../../models/Client/booking.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { Cart } from "../../models/Client/cart.model.js";
 import { PaymentModel } from "../../models/Client/paymentModel.js";
-import { findNearbyCleaners } from "../../utils/findNearByUser.js";
-import { NotificationModel } from "../../models/Notification/notificationSchema.js";
-import sendNotification from "../../socket/sendNotification.js";
+import AdminWallet from "../../models/adminWallet/adminWallet.model.js";
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
@@ -27,7 +25,19 @@ async function updateBookingStatus(bookingId, updates) {
 
     await paymentModel.save();
 
-    booking.PaymentId.PaymentStatus = updates.PaymentStatus;
+    console.log("-----------payment saved in payment schema---------");
+
+    let adminWallet = await AdminWallet.findOne({});
+    // Check if the admin wallet exists
+    if (!adminWallet) {
+      // If not, create a new one
+      adminWallet = new AdminWallet();
+    }
+    adminWallet.total += parseInt(paymentModel.PaymentValue, 10);
+    adminWallet.payementHistory.push(paymentModel._id);
+
+    await adminWallet.save();
+    console.log("-----------adminWallet updated---------");
 
     const cart = await Cart.findOne({ User: booking.User });
 
@@ -35,25 +45,11 @@ async function updateBookingStatus(bookingId, updates) {
       throw new Error("No cart found for provided ID");
     }
 
+    console.log("-----------cart updating---------");
     cart.cart = [];
     await cart.save();
 
-
-
-    // find cleaners and send Notification to the cleaners
-    const notificationData = {
-      cleanerId: booking.Cleaner._id,
-      bookingId: bookingId,
-      message: "New Booking has been created",
-    }
-
-    const notification = await NotificationModel.create(notificationData);
-
-
-    console.log("location", booking.cartData[0].Location.coordinates[0], booking.cartData[0].Location.coordinates[1])
-
-    await findNearbyCleaners(booking.cartData[0].Location.coordinates[0], booking.cartData[0].Location.coordinates[1])
-
+    // Searching Cleaners and send notification to them
   } catch (error) {
     console.error("Error updating booking:", error.message);
   }
@@ -62,7 +58,7 @@ async function updateBookingStatus(bookingId, updates) {
 async function handleEvent(eventType, paymentIntent) {
   const bookingId = paymentIntent.metadata.bookingModelId;
 
-  console.log("------------Handle Event---metadata---------", bookingId);
+  console.log("-----------bookingId---------", bookingId);
 
   const statusUpdates = {
     "payment_intent.amount_capturable_updated": {
