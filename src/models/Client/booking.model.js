@@ -36,7 +36,7 @@ const bookingSchema = mongoose.Schema(
       },
     ],
     BookingStatus: {
-      type: Boolean,
+      type: String,
       enum: ["Pending", "Confirm", "Cancel"],
       default: "Pending",
     }, // when cleaner Accept : true

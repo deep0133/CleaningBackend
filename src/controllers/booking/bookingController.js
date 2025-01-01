@@ -53,7 +53,6 @@ export const createBooking = asyncHandler(async (req, res) => {
     const booking = new BookingService({
       User: req.user._id, // User ID from JWT
       CartData: cart.cart,
-      BookingStatus: false, // Pending until a cleaner accepts
       OTP: {
         start: Math.floor(1000 + Math.random() * 9000).toString(), // Random 4-digit OTP
         end: Math.floor(1000 + Math.random() * 9000).toString(),
@@ -195,7 +194,7 @@ export const acceptBooking = asyncHandler(async (req, res) => {
   if (!cleaner) {
     return res.status(400).json({
       success: false,
-      message: "Cleaner not available or already assigned to another booking",
+      message: "You are not available or already assigned to another booking",
     });
   }
 
@@ -222,7 +221,7 @@ export const acceptBooking = asyncHandler(async (req, res) => {
   try {
     // Assign the cleaner to the booking
     booking.Cleaner = cleaner._id;
-    booking.BookingStatus = true; // Accepted
+    booking.BookingStatus = "Confirm"; // Accepted
     await booking.save({ session });
 
     // Update cleaner's status
@@ -299,6 +298,10 @@ export const getUserBookings = asyncHandler(async (req, res) => {
     .populate({
       path: "PaymentId",
       select: "-__v -stripeClientSecerat -bookingId",
+    })
+    .populate({
+      path: "CartData.categoryId", // Populate categoryId inside CartData array
+      select: "name", // Example: exclude unnecessary fields from Services
     })
     .select("-OTP -__v");
 

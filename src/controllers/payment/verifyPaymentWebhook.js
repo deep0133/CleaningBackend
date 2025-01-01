@@ -49,7 +49,7 @@ async function updateBookingStatus(bookingId, updates) {
       adminWallet = new AdminWallet();
     }
     adminWallet.total += parseInt(paymentModel.PaymentValue, 10);
-    adminWallet.payementHistory.push(paymentModel._id);
+    adminWallet.paymentHistory.push(paymentModel._id);
 
     await adminWallet.save();
 

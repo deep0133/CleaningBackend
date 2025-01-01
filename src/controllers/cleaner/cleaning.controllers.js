@@ -35,7 +35,7 @@ const createCleaningService = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  let imgFileName = `${req.file.filename}`;
+  let imgFileName = `${req.file.path}`;
 
   try {
     const { name, description, pricePerHour } = req.body;
