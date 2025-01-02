@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { User } from "../models/user.model.js";
 const SECRET_KEY = process.env.ACCESS_TOKEN_SECERET;
 
 function isAuthenticated(req, res, next) {
@@ -43,8 +44,9 @@ function isAuthenticated(req, res, next) {
   }
 }
 
-function isCleaner(req, res, next) {
-  if (!req.user || req.user.role !== "cleaner") {
+async function isCleaner(req, res, next) {
+  const user = await User.findById(req.user._id);
+  if (!user || user.role !== "cleaner") {
     return res.status(403).json({
       message: "You are not authorized to perform this action",
     });

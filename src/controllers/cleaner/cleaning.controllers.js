@@ -1,6 +1,7 @@
 import ServiceModel from "../../models/Services/services.model.js";
 import { validationResult } from "express-validator";
 import AddOnModel from "../../models/Services/addons.model.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
 const getCleaningServices = async (req, res) => {
   try {

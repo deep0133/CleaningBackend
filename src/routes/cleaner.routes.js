@@ -1,8 +1,18 @@
 import express from "express";
-import { verifyCleaner } from "../controllers/admin/cleaner/verifyCleaner.js";
-import { isAdmin, isAuthenticated } from "../middleware/authenticateUser.js";
+import {
+  addOrUpdateAccountDetails,
+  getProfile,
+} from "../controllers/cleaner/cleaner.controller.js";
+import { isAuthenticated, isCleaner } from "../middleware/authenticateUser.js";
 const router = express.Router();
 
-router.post("/verify", isAuthenticated, isAdmin, verifyCleaner);
+router.get("/myProfile", isAuthenticated, isCleaner, getProfile);
+
+router.post(
+  "/addOrupdate",
+  isAuthenticated,
+  isCleaner,
+  addOrUpdateAccountDetails
+);
 
 export default router;

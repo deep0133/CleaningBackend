@@ -191,11 +191,10 @@ const register = asyncHandler(async (req, res) => {
     );
 });
 
+// take number and password from the user
+// send otp to the user at his number and save the otp to the database
+// take otp from the user  and validate it from the database
 const login = asyncHandler(async (req, res) => {
-  // take number and password from the user
-  // send otp to the user at his number and save the otp to the database
-  // take otp from the user  and validate it from the database
-
   const { phoneNumber, password } = req.body;
 
   if (!phoneNumber && !password) {
@@ -229,14 +228,13 @@ const login = asyncHandler(async (req, res) => {
 
   const loggingInfo = await User.findById(user._id).select("-password ");
 
-  res.set("Authorization", `Bearer ${accessToken}`);
-
   res.status(200).json(
     new ApiResponse(
       200,
       {
         accessToken,
         refreshToken,
+        role: loggingInfo.role,
       },
       "user logged in successfully"
     )
