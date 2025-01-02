@@ -496,10 +496,7 @@ const logout = asyncHandler(async (req, res) => {
 const myProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).select(
     "-password -accessToken -refreshToken -location "
-  );
-
-
-  res.status(200).json({ success: true, user });
+  );  res.status(200).json({ success: true, user });
 });
 
 const allUsers = asyncHandler(async (req, res) => {

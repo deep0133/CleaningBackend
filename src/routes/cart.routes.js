@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { isAdmin, isAuthenticated } from "../middleware/authenticateUser.js";
+import { isAuthenticated } from "../middleware/authenticateUser.js";
 import {
   addToCart,
   deleteCart,

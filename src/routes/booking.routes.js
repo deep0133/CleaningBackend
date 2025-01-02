@@ -24,7 +24,7 @@ router.post("/createBooking", isAuthenticated, createBooking);
 router.post("/nearByCleaner", isAuthenticated, getNearbyCleaners);
 
 // Cleaner Actions:
-router.post("/acceptBooking", isAuthenticated, acceptBooking);
+router.post("/acceptBooking/:id", isAuthenticated, acceptBooking);
 router.post("/startService", isAuthenticated, startService);
 router.post("/endService", isAuthenticated, endService);
 

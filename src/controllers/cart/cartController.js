@@ -1,4 +1,3 @@
-import { BookingService } from "../../models/Client/booking.model.js";
 import { Cart } from "../../models/Client/cart.model.js";
 import AddOnModel from "../../models/Services/addons.model.js";
 import ServiceModel from "../../models/Services/services.model.js";

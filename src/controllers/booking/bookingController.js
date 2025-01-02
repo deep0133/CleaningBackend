@@ -8,7 +8,8 @@ import { PaymentModel } from "../../models/Client/paymentModel.js";
 import { User } from "../../models/user.model.js";
 // import { findNearbyCleaner } from "../../utils/findNearByUser.js";
 import sendNotification from "../../socket/sendNotification.js";
-
+import validateTimeSlot from "../../utils/validateTimeSlot.js";
+// import { NotificationModel } from "../../models/Notification/notificationSchema.js";
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
@@ -187,22 +188,18 @@ export const acceptBooking = asyncHandler(async (req, res) => {
 
   // Step 3: Ensure cleaner is available
   const cleaner = await Cleaner.findOne({
-    user: req.user._id, // Cleaner ID from JWT
-    availability: true,
+    user: req.user._id,
+  }).populate({
+    path: "bookings",
+    select: "CartData.TimeSlot",
   });
+
+  console.log("---------cleaner----------", cleaner);
 
   if (!cleaner) {
     return res.status(400).json({
       success: false,
-      message: "You are not available or already assigned to another booking",
-    });
-  }
-
-  // Step 4: Check if the cleaner has an active booking
-  if (cleaner.currentBooking) {
-    return res.status(400).json({
-      success: false,
-      message: "Cleaner is already working on another booking",
+      message: "You are not authorized to accept this booking",
     });
   }
 
@@ -214,7 +211,22 @@ export const acceptBooking = asyncHandler(async (req, res) => {
       .json({ success: false, message: "Cannot accept an expired booking" });
   }
 
-  // Step 6: Atomic Update - Assign the booking to the cleaner
+  // Step 6: check bookings timeslots with current booking
+  const cleanerBookings = cleaner.bookings;
+
+  const validateTimeSlotDuration = validateTimeSlot(
+    cleanerBookings,
+    booking.CartData[0].TimeSlot
+  );
+
+  if (!validateTimeSlotDuration) {
+    return res.status(400).json({
+      success: false,
+      message: "Time slot is not available",
+    });
+  }
+
+  // Step 7: Atomic Update - Assign the booking to the cleaner
   const session = await BookingService.startSession();
   session.startTransaction();
 
@@ -226,13 +238,13 @@ export const acceptBooking = asyncHandler(async (req, res) => {
 
     // Update cleaner's status
     cleaner.availability = false; // Mark cleaner as unavailable
-    cleaner.currentBooking = booking._id; // Set current booking
+    // cleaner.currentBooking = booking._id; // Set current booking
     await cleaner.save({ session });
 
     await session.commitTransaction();
     session.endSession();
 
-    // Step 7: Respond with success
+    // Step 8: Respond with success
     res.status(200).json({
       success: true,
       message: "Booking accepted",
