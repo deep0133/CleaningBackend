@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import { Schema } from "mongoose";
 
-
 const cleaner = new Schema(
   {
     // userID
@@ -16,7 +15,6 @@ const cleaner = new Schema(
       {
         type: String,
         required: true,
-        default: "deep Cleaning",
       },
     ],
     availability: {
@@ -25,9 +23,14 @@ const cleaner = new Schema(
     },
     currentBooking: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Booking", // Reference to the current booking they are working on
+      ref: "Booking",
     },
-
+    bookings: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Booking",
+      },
+    ],
     rating: {
       type: Number,
       default: 0, // Average rating from user feedback
@@ -48,21 +51,21 @@ const cleaner = new Schema(
       type: Boolean,
       default: false,
     },
-    accountDetail:{
-      accountNumber:String,
-      accountName:String,
-      bankName:String,
+    accountDetail: {
+      accountNumber: String,
+      accountName: String,
+      bankName: String,
     },
-    routingNumber:String,
+    routingNumber: String,
+    verifyByAdmin: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
   }
 );
-
-
-
-
 
 // {
 //   "user": "658e9324b78f890001000001", // Replace with a real User ObjectId from your database
