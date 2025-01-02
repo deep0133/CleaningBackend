@@ -363,7 +363,6 @@ const myProfile = asyncHandler(async (req, res) => {
     "-password -accessToken -refreshToken -location "
   );
 
-  console.log("user/........", user);
   res.status(200).json({ success: true, user });
 });
 

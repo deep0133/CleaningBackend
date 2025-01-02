@@ -15,7 +15,6 @@ const cleaner = new Schema(
       {
         type: String,
         required: true,
-        default: "deep Cleaning",
       },
     ],
     availability: {
@@ -58,6 +57,10 @@ const cleaner = new Schema(
       bankName: String,
     },
     routingNumber: String,
+    verifyByAdmin: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

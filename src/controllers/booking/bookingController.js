@@ -194,10 +194,12 @@ export const acceptBooking = asyncHandler(async (req, res) => {
     select: "CartData.TimeSlot",
   });
 
+  console.log("---------cleaner----------", cleaner);
+
   if (!cleaner) {
     return res.status(400).json({
       success: false,
-      message: "Already assigned to another Cleaner",
+      message: "You are not authorized to accept this booking",
     });
   }
 
