@@ -6,13 +6,14 @@ import twilio from 'twilio';
 const accountSid = process.env.TWILIO_ACCOUNT_SID; 
 const authToken = process.env.TWILIO_AUTH_TOKEN;  
 const serviceSid = process.env.TWILIO_SERVICE_SID; 
-console.log()
+
 
 // Verify Service SID
 const client = twilio(accountSid, authToken,{logLevel:'debug'});
 
 // // Function to send OTP
 async function sendOtp(phoneNumber) {
+  console.log("serviceSid",serviceSid)
   try {
     const verification = await client.verify.v2.services(serviceSid)
       .verifications
@@ -39,10 +40,11 @@ async function sendOtp(phoneNumber) {
     }
   } catch (error) {
     console.error('Error sending OTP:', error.message);
-    return {
-      
+    
+      return ({
+        success:false,
       message: `Error sending OTP: ${error.message || "Unknown error"}`,
-    };
+    });
   }
 }
 
@@ -64,8 +66,9 @@ async function verifyOtp(phoneNumber, otpCode) {
       .create({
         to: phoneNumber,
         code: otpCode,
-      });
+      }); 
 
+      console.log("Verification Check Response ---- in verify otp fun----:", verificationCheck)
  
 
     // Check if verification was successful
@@ -82,11 +85,15 @@ async function verifyOtp(phoneNumber, otpCode) {
       };
     }
     
-    return verificationCheck;
+    // return verificationCheck;
   } catch (error) {
     // Enhanced error handling with full error message
     console.error('Error verifying OTP:', error.message);
-    return (`Failed to verify OTP. ${error.message || error}`);
+    // return (`Failed to verify OTP. ${error.message || error}`);
+    return {
+      success: false,
+      message: `Failed to verify OTP. ${error.message || "Unknown error"}`,
+    };
   }
 }
 

@@ -11,23 +11,9 @@ const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 async function updateBookingStatus(bookingId, updates) {
   try {
-    console.log(
-      "---------------------------------------------------------------------"
-    );
-    console.log(
-      "---------------------------------------------------------------------"
-    );
-    console.log(
-      "----------------------Start updating Booking Status------------------"
-    );
-    console.log(
-      "---------------------------------------------------------------------"
-    );
-    console.log(
-      "---------------------------------------------------------------------"
-    );
-    console.log("----------bookingId-------------: ", bookingId);
-    const booking = await BookingService.findById(bookingId);
+    console.log("------------updateBookingStatus------------");
+
+    const booking = await BookingService.findById(bookingId).populate("Cleaner");
 
     console.log("----------booking data-------------: ", booking);
 
@@ -120,6 +106,8 @@ export const verifyStripePayment = asyncHandler(async (request, response) => {
   }
 
   // Notification Send to Cleaner and store data in notification model
+
+
 
   // Acknowledge receipt of the event
   response.status(200).send("Webhook event processed");

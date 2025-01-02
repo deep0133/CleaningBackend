@@ -5,13 +5,12 @@
 
 
 const handleSocketConnection = (io) => {
-  console.log("hello world ")
-  console.log(socketIdMap);
+ console.log("............socket handler function is called..................")
+
   io.on("connection", (socket) => {
-    console.log(`socket Id: ${socket.id}`);
-    console.log("User got connected..............................................")
-    socket.onAny((event, ...args) => {
-      console.log(`Event received: ${event}`, args);
+    
+    socket.onAny((event) => {
+      console.log(`Event received: ${event}`);
     });
 
     socket.on("user",()=>{
@@ -21,17 +20,12 @@ const handleSocketConnection = (io) => {
     // Register cleaner by cleanerId
     socket.on("register_cleaner", (cleanerId) => {
 
-       console.log("first cleanerId");
+         console.log("...................cleaner get connected.................")
 
-      console.log(`Cleaner ${cleanerId} registered.`);
-
-      // Store the socket ID for this cleaner in the socketIdMap
       socketIdMap[cleanerId] = socket.id;
-      console.log("socketIdMap..",socketIdMap);
-          
       
-      // Notify all connected clients when a new cleaner registers
-      io.emit("notification", `Cleaner ${cleanerId} has registered.`);
+
+      io.emit("notification", `Cleaner ${cleanerId} has registered. <><><><><><><><><><`);
     });
 
     // Handle disconnection

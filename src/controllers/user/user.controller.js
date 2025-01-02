@@ -1,13 +1,13 @@
 import { User } from "../../models/user.model.js";
-import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/apiError.js";
 import { ApiResponse } from "../../utils/apiResponse.js";
 import { Contact } from "../../models/contactSchema.js";
 import { sendOtp, verifyOtp } from "../../utils/opt.js";
+import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 
-const verifyOtpController = asyncHandler(async (req, res) => {
+const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
   const {
     name,
     email,
@@ -17,7 +17,6 @@ const verifyOtpController = asyncHandler(async (req, res) => {
     address,
     category,
     otp,
-    location,
     availability,
     currentBooking,
     rating,
@@ -57,19 +56,21 @@ const verifyOtpController = asyncHandler(async (req, res) => {
   // Verify OTP
   const verificationResponse = await verifyOtp(phoneNumber, otp);
 
+  console.log("verificationResponse", verificationResponse);
+
   if (!verificationResponse || verificationResponse.success === false) {
-    throw new ApiError(401, verificationResponse, "OTP verification failed");
+    // throw new ApiError(401, verificationResponse, "OTP verification failed");
+    return res.status(401).json(
+      new ApiResponse(401, {}, "OTP verification failed")
+    );
   }
 
   const session = await mongoose.startSession();
   session.startTransaction();
 
-  // If additional registration details are provided
-
-  // Create a new user with full details
   try {
-    const user = await User.create(
-      [
+    // Create a new user with full details
+    const user = new User(
         {
           name,
           email,
@@ -78,50 +79,51 @@ const verifyOtpController = asyncHandler(async (req, res) => {
           address,
           phoneNumber,
           isVerified: true,
-        },
-      ],
-      { session }
+        }
     );
 
+    await user.save({ session });
+
+    console.log("-------------------user-----------------",user);
+
     // Create associated Cleaner record if role is cleaner
-    if (role === "cleaner") {
-      if (!user._id) {
-        throw new ApiError(
-          500,
-          "Something went wrong while registering the user"
-        );
-      }
-      const cleaner = await Cleaner.create(
-        [
-          {
-            user: user._id,
-            category,
-            location,
-            availability,
-            currentBooking,
-            rating,
-            totalBookings,
-            completedBookings,
-            earnings,
-            isOnline,
-          },
-        ],
-        { session }
-      );
+    // if (role === "cleaner") {
+    //   if (!user._id) {
+    //     throw new ApiError(500, "Something went wrong while registering the user");
+    //   }
+    //   const cleaner = await Cleaner.create(
+    //     [
+    //       {
+    //         user: user._id,
+    //         category,
+    //         availability,
+    //         currentBooking,
+    //         rating,
+    //         totalBookings,
+    //         completedBookings,
+    //         earnings,
+    //         isOnline,
+    //       },
+    //     ],
+    //     { session }
+    //   );
 
-      if (!cleaner || cleaner.length === 0) {
-        throw new ApiError(500, "Failed to create cleaner record");
-      }
-    }
+    //   if (!cleaner || cleaner.length === 0) {
+    //     throw new ApiError(500, "Failed to create cleaner record");
+    //   }
+    // }
 
+    // Commit the transaction if everything went well
     await session.commitTransaction();
 
+  console.log("..........................user............................");
     // Generate tokens
     const accessToken = user.generateAccessToken();
-    const refreshToken = user.generateRefreshToken();
+    const refreshToken= user.generateRefreshToken();
 
     user.accessToken = accessToken;
     user.refreshToken = refreshToken;
+    console.log("stored")
 
     await user.save({ validateBeforeSave: false });
 
@@ -130,29 +132,34 @@ const verifyOtpController = asyncHandler(async (req, res) => {
     );
 
     if (!createdUser) {
-      throw new ApiError(
-        500,
-        "Something went wrong while registering the user"
-      );
+      throw new ApiError(500, "Something went wrong while registering the user");
     }
 
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          { accessToken, refreshToken },
-          " otp is verfied and User registered successfully"
-        )
-      );
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        { accessToken, refreshToken },
+        "OTP is verified and User registered successfully"
+      )
+    );
   } catch (error) {
-    await session.abortTransaction();
-    console.error(error);
+    // If error happens, rollback the transaction and log the error
+    console.error("Transaction error:", error);
+    
+    // Only abort if we haven't committed the transaction
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+      console.log("Transaction aborted due to error");
+    }
+    
+    // Throw the error to propagate
     throw error;
   } finally {
+    // End the session in either case (commit or abort)
     session.endSession();
   }
 });
+
 
 // const register = asyncHandler(async (req, res) => {
 //   // take name email password , address , role ,phone number from the user
@@ -250,6 +257,134 @@ const verifyOtpController = asyncHandler(async (req, res) => {
 //   );
 // });
 
+
+// const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
+//   const { name, email, phoneNumber, password, role, address, category, otp,
+//     //  location, 
+//      availability, currentBooking, rating, totalBookings, completedBookings, earnings, isOnline } = req.body;
+
+//   if (!phoneNumber || !otp) {
+//     throw new ApiError(400, "Phone number and OTP are required");
+//   }
+
+//   if (
+//     [name, email, password, role, phoneNumber].some(
+//       (field) => typeof field !== "string" || field.trim() === ""
+//     ) ||
+//     !Array.isArray(address) ||
+//     address.length === 0
+//   ) {
+//     throw new ApiError(400, "All fields are required");
+//   }
+
+//     // Check for existing user by email or phone number
+//     const existedUser = await User.findOne({ $or: [{ phoneNumber }, { email }] });
+//     if (existedUser) {
+//       throw new ApiError(409, "User with this email or phoneNumber already exists");
+//     }
+
+//   if (role === "cleaner" && (!category)) {
+//     throw new ApiError(400, "Category field is required for cleaners");
+//   }
+
+
+//   // Verify OTP
+//   const verificationResponse = await verifyOtp(phoneNumber, otp);
+
+
+//   if (!verificationResponse || verificationResponse.success===false) {
+
+//     throw new ApiError(401, verificationResponse,"OTP verification failed");
+//   }
+
+//   const session = await mongoose.startSession();
+//   session.startTransaction();
+
+
+//   // If additional registration details are provided
+
+
+
+
+
+
+
+
+//     // Create a new user with full details
+//    try {
+//     const user = new User({
+//       name,
+//       email,
+//       password,
+//       role,
+//       address,
+//       phoneNumber,
+//       isVerified: true
+//     });
+
+// await user.save({ session });
+//     // Create associated Cleaner record if role is cleaner
+//     if (role === "cleaner") {
+//       if(!user._id){
+//         throw new ApiError(500, "Something went wrong while registering the user");
+//       }
+//       const cleaner = await Cleaner.create([{
+//         user: user._id,
+//         category,
+//         location,
+//         availability,
+//         currentBooking,
+//         rating,
+//         totalBookings,
+//         completedBookings,
+//         earnings,
+//         isOnline
+//       }], { session });
+
+//       if (!cleaner || cleaner.length === 0) {
+//         throw new ApiError(500, "Failed to create cleaner record");
+//       }
+
+//     }
+
+
+//     await session.commitTransaction();
+
+//     console.log("..........................session end............................");
+//     // Generate tokens
+//     const accessToken = user.generateAccessToken();
+//     const refreshToken = user.generateRefreshToken();
+
+//     console.log("token generated")
+
+//     user.accessToken = accessToken;
+//     user.refreshToken = refreshToken;
+
+//     await user.save({ validateBeforeSave: false });
+
+//     const createdUser = await User.findById(user._id).select(
+//       "-password -refreshToken -accessToken"
+//     );
+
+//     if (!createdUser) {
+//       throw new ApiError(500, "Something went wrong while registering the user");
+//     }
+
+//     return res.status(200).json(
+//       new ApiResponse(200, { accessToken, refreshToken }, " otp is verfied and User registered successfully")
+//     );
+
+
+//    } catch (error) {
+//     await session.abortTransaction();
+//     console.error(error);
+//     throw error;
+//    }finally {
+//     session.endSession();
+//   }
+
+// });
+
 const register = asyncHandler(async (req, res) => {
   const { phoneNumber } = req.body;
 
@@ -266,7 +401,7 @@ const register = asyncHandler(async (req, res) => {
     try {
       const currentStatus = await sendOtp(phoneNumber);
 
-      if (!currentStatus) {
+      if (!currentStatus || currentStatus.success === false) {
         throw new ApiError(401, "Failed to send OTP");
       }
     } catch (error) {
@@ -361,9 +496,7 @@ const logout = asyncHandler(async (req, res) => {
 const myProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).select(
     "-password -accessToken -refreshToken -location "
-  );
-
-  res.status(200).json({ success: true, user });
+  );  res.status(200).json({ success: true, user });
 });
 
 const allUsers = asyncHandler(async (req, res) => {
@@ -588,8 +721,8 @@ export {
   forgotPassword,
   verifyOtp,
   resetPassowrd,
-  verifyOtpController,
-  deleteAddress,
+  verfiyOtpAndRegister,
+  deleteAddress
 };
 
 // get all users:

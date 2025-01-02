@@ -13,15 +13,16 @@ import {
   addNewAddress,
   allUsers,
   deleteAddress,
-  getAllUsers,
+  verfiyOtpAndRegister
 } from "../controllers/user/user.controller.js";
 import { isAdmin, isAuthenticated } from "../middleware/authenticateUser.js";
 const router = Router();
 
-router.post("/all", getAllUsers);
+// router.post("/all", getAllUsers);
 
 // Login, Signup Route & Logout
 router.post("/register", register);
+router.post("/verify",verfiyOtpAndRegister);
 router.post("/login", login);
 
 router.post("/logout", isAuthenticated, logout);

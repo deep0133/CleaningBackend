@@ -8,6 +8,7 @@ const notificationSchema = new Schema({
   bookingId: {
     type: Schema.Types.ObjectId,
     ref: "Booking", // Ensure the model name matches your Booking model
+  
     // required: true,
   },
   message: {
@@ -38,5 +39,3 @@ notificationSchema.methods.isNotificationExpired = function () {
 };
 
 export const NotificationModel = model("CleanerNotification", notificationSchema);
-
-;

@@ -10,6 +10,8 @@ import cartRouter from "./routes/cart.routes.js";
 import { verifyStripePayment } from "./controllers/payment/verifyPaymentWebhook.js";
 import { balanceWebhook } from "./controllers/payment/balanceWebhook.js";
 import walletRouter from "./routes/adminWallet.routes.js";
+import {findNearbyCleanersController} from  "./utils/findNearByUser.js"
+
 
 const app = express();
 
@@ -48,6 +50,7 @@ app.use("/api/v1/admin/cleaner", cleanerRouter);
 // Stripe webhooks (must come after other routes, but before body parsing)
 app.post("/webhook/paymentStatus", verifyStripePayment);
 app.post("/webhook/balance", balanceWebhook);
+app.post('/findNearbyCleaners', findNearbyCleanersController);
 
 // Default route for unhandled paths
 app.all("*", (req, res) => {
