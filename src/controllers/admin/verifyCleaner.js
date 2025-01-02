@@ -1,5 +1,5 @@
-import { Cleaner } from "../../../models/Cleaner/cleaner.model.js";
-import { asyncHandler } from "../../../utils/asyncHandler.js";
+import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
 const verifyCleaner = asyncHandler(async (req, res) => {
   const { id } = req.params;

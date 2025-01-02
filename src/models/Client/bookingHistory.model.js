@@ -1,31 +1,34 @@
-import mongoose, { mongo } from "mongoose";
-import { required } from "nodemon/lib/config";
+import mongoose from "mongoose";
 
-const bookingHistorySchema = mongoose.Schema({
-    user:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:"User",
-        required:true,
+const bookingHistorySchema = mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
-    Bookings:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:"Booking",
-        required:true
+    Bookings: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Booking",
+      required: true,
     },
-    serviceMan:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:"ServiceMan",
-        required:false
+    serviceMan: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ServiceMan",
+      required: false,
     },
-    BookingStatus:{
-       type:String,
-       enum:["completed","canceled","Pending"],
-       default:"pending"
-    }
-},
-{
-    timestamps:true
-}
-)
+    BookingStatus: {
+      type: String,
+      enum: ["completed", "canceled", "Pending"],
+      default: "pending",
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
 
-export const BookingHistory = mongoose.model("BookingHistory",bookingHistorySchema);
+export const BookingHistory = mongoose.model(
+  "BookingHistory",
+  bookingHistorySchema
+);

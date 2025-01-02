@@ -5,11 +5,7 @@ import { BookingService } from "../../models/Client/booking.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { Cart } from "../../models/Client/cart.model.js";
 import { PaymentModel } from "../../models/Client/paymentModel.js";
-import { User } from "../../models/user.model.js";
-// import { findNearbyCleaner } from "../../utils/findNearByUser.js";
-import sendNotification from "../../socket/sendNotification.js";
 import validateTimeSlot from "../../utils/validateTimeSlot.js";
-// import { NotificationModel } from "../../models/Notification/notificationSchema.js";
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
@@ -237,8 +233,6 @@ export const acceptBooking = asyncHandler(async (req, res) => {
     await booking.save({ session });
 
     // Update cleaner's status
-    cleaner.availability = false; // Mark cleaner as unavailable
-    // cleaner.currentBooking = booking._id; // Set current booking
     await cleaner.save({ session });
 
     await session.commitTransaction();
