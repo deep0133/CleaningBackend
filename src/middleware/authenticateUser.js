@@ -45,7 +45,10 @@ function isAuthenticated(req, res, next) {
 }
 
 async function isCleaner(req, res, next) {
-  const user = await User.findById(req.user._id);
+  const user = await User.findById(req.user._id).select(
+    "-password -isOtpVerified -accessToken -refreshToken"
+  );
+  req.cleaner_data_in_user = user;
   if (!user || user.role !== "cleaner") {
     return res.status(403).json({
       message: "You are not authorized to perform this action",

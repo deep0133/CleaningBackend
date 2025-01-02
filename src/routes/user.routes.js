@@ -13,7 +13,8 @@ import {
   addNewAddress,
   allUsers,
   deleteAddress,
-  verfiyOtpAndRegister
+  verfiyOtpAndRegister,
+  updateProfile,
 } from "../controllers/user/user.controller.js";
 import { isAdmin, isAuthenticated } from "../middleware/authenticateUser.js";
 const router = Router();
@@ -22,7 +23,7 @@ const router = Router();
 
 // Login, Signup Route & Logout
 router.post("/register", register);
-router.post("/verify",verfiyOtpAndRegister);
+router.post("/verify", verfiyOtpAndRegister);
 router.post("/login", login);
 
 router.post("/logout", isAuthenticated, logout);
@@ -33,6 +34,7 @@ router.get("/all", allUsers);
 // Update Routes
 router.post("/add/address", isAuthenticated, addNewAddress);
 router.post("/update/address", isAuthenticated, updateAddress);
+router.post("/update/profile", isAuthenticated, updateProfile);
 router.post("/change/password", isAuthenticated, changePassword);
 router.post("/deleteAddress", isAuthenticated, deleteAddress);
 
