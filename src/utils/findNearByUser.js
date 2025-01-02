@@ -80,7 +80,7 @@ export const findNearbyCleaners = async (longitude, latitude) => {
 
 
 export const findNearbyCleanersController = async (req, res) => {
-  try {
+
     const { longitude, latitude,
       bookingId
     } = req.body;
@@ -141,26 +141,33 @@ export const findNearbyCleanersController = async (req, res) => {
 
     const bookingDetail = await BookingService.findById(bookingId)
     console.log("bookingDetail...............", bookingDetail)
+ 
 
-    // console.log(bookingDetail.Duration, bookingDetail.TotalPrice, bookingDetail.UserAddress)
+    
 
     const notificationExists = await NotificationModel.findOne({ bookingId: bookingId });
 
-    console.log("notificationExists...............", notificationExists)
+if(notificationExists){
+  throw new ApiError(400, 'Notification already sent to nearby cleaners');
+}
 
     const notificationData = {
       message: "New cleaning request",
-      // duration: bookingDetail.cartData[0].Duration,
-      // price: bookingDetail.cartData[0].TotalPrice,
-      // address: bookingDetail.cartData[0].UserAddress,
+      duration: bookingDetail.CartData[0].Duration,
+      price: bookingDetail.CartData[0].TotalPrice,
+      address: bookingDetail.CartData[0].UserAddress,
     }
+    
+    const connectedCleanersIds = Object.values(socketIdMap);
+    console.log("...................socketIds................",connectedCleanersIds);
 
+  
 
     if (Object.keys(socketIdMap).length>0) {
-
       sendNotification(nearbyCleaners, notificationData);
     }
     const cleanerIds = nearbyCleaners.map(cleaner => cleaner._id.toString());
+    
 
     const notifications = cleanerIds.map((cleanerId) => ({
       cleanerId,
@@ -169,6 +176,8 @@ export const findNearbyCleanersController = async (req, res) => {
       timestamp: new Date(),
       isExpire: false,
     }));
+     
+
 
 
 
@@ -180,13 +189,7 @@ export const findNearbyCleanersController = async (req, res) => {
       cleanersNotified: nearbyCleaners.length,
     });
 
-  } catch (error) {
-    console.error("Error finding nearby cleaners:", error);
-    return res.status(500).json({
-      message: "Internal server error",
-      error: error.message,
-    });
-  }
-};
+  } 
+
 
 

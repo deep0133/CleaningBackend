@@ -4,6 +4,7 @@ import { ApiError } from "../../utils/apiError.js";
 import { ApiResponse } from "../../utils/apiResponse.js";
 import { Contact } from "../../models/contactSchema.js";
 import { sendOtp, verifyOtp } from "../../utils/opt.js";
+import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 
@@ -24,6 +25,7 @@ const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
     completedBookings,
     earnings,
     isOnline,
+    location
   } = req.body;
 
   if (!phoneNumber || !otp) {
@@ -87,31 +89,28 @@ const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
     console.log("-------------------user-----------------",user);
 
     // Create associated Cleaner record if role is cleaner
-    // if (role === "cleaner") {
-    //   if (!user._id) {
-    //     throw new ApiError(500, "Something went wrong while registering the user");
-    //   }
-    //   const cleaner = await Cleaner.create(
-    //     [
-    //       {
-    //         user: user._id,
-    //         category,
-    //         availability,
-    //         currentBooking,
-    //         rating,
-    //         totalBookings,
-    //         completedBookings,
-    //         earnings,
-    //         isOnline,
-    //       },
-    //     ],
-    //     { session }
-    //   );
+    if (role === "cleaner") {
+      if (!user._id) {
+        throw new ApiError(500, "Something went wrong while registering the user");
+      }
+      const cleaner = await Cleaner.create(
+        [
+          {
+            user: user._id,
+            category,
+            availability,
+            earning:0,
+            isOnline,
+            
+          },
+        ],
+        { session }
+      );
 
-    //   if (!cleaner || cleaner.length === 0) {
-    //     throw new ApiError(500, "Failed to create cleaner record");
-    //   }
-    // }
+      if (!cleaner || cleaner.length === 0) {
+        throw new ApiError(500, "Failed to create cleaner record");
+      }
+    }
 
     // Commit the transaction if everything went well
     await session.commitTransaction();
@@ -393,6 +392,7 @@ const register = asyncHandler(async (req, res) => {
   }
 
   const user = await User.findOne({ phoneNumber });
+  
   if (user) {
     throw new ApiError(401, "User with this number already exists");
   }

@@ -1,7 +1,7 @@
 
 
 
- const socketIdMap = {}; 
+const socketIdMap = new Map();
 
 
 const handleSocketConnection = (io) => {
@@ -21,8 +21,11 @@ const handleSocketConnection = (io) => {
     socket.on("register_cleaner", (cleanerId) => {
 
          console.log("...................cleaner get connected.................")
-
-      socketIdMap[cleanerId] = socket.id;
+         if (socketIdMap.has(cleanerId)) {
+          console.log(`Cleaner ${cleanerId} is already connected. Updating socket ID.`);
+        }
+      // socketIdMap[cleanerId] = socket.id;
+      socketIdMap.set(cleanerId, socket.id);
       
 
       io.emit("notification", `Cleaner ${cleanerId} has registered. <><><><><><><><><><`);
@@ -32,15 +35,18 @@ const handleSocketConnection = (io) => {
     socket.on("disconnect", () => {
       console.log("user disconnected..............................................")
       // Find and remove the cleaner who disconnected from the map
-      for (const cleanerId in socketIdMap) {
-        if (socketIdMap[cleanerId] === socket.id) {
+      let found = false;
+      for (const [cleanerId, socketId] of socketIdMap.entries()) {
+        if (socketId === socket.id) {
           console.log(`Cleaner ${cleanerId} disconnected.`);
-          delete socketIdMap[cleanerId]; // Remove the cleaner from socketIdMap
+          socketIdMap.delete(cleanerId);
+          found = true;
           break;
         }
       }
-
-      // Notify all connected clients when a cleaner disconnects
+      if (!found) {
+        console.log("Disconnected socket was not associated with any cleaner.");
+      }
       io.emit("notification", "A cleaner has disconnected.");
     });
   });
