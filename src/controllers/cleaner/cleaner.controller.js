@@ -1,19 +1,10 @@
 import AccountDetail from "../../models/accountDetail/accountDetail.model.js";
 import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
-import { User } from "../../models/user.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
 // get profile:
 const getProfile = asyncHandler(async (req, res) => {
-  const userDetail = await User.findById(req.user._id).select(
-    "-password -isOtpVerified -accessToken -refreshToken"
-  );
-
-  if (!userDetail || userDetail.role !== "cleaner") {
-    return res
-      .status(404)
-      .json({ success: false, message: "Cleaner not found" });
-  }
+  const userDetail = req.cleaner_data_in_user;
 
   const cleanerDetail = await Cleaner.findOne({ user: req.user._id })
     .populate("accountId")

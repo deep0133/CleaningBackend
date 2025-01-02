@@ -477,6 +477,7 @@ export {
   logout,
   updateAddress,
   addNewAddress,
+  updateProfile,
   changePassword,
   submitContactForm,
   getAllContact,
