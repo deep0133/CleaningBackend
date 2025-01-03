@@ -17,13 +17,11 @@ const contactSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      match: [true, "Email  is required"],
     },
     mobileNumber: {
       type: String,
       required: true,
       trim: true,
-      match: [true, "Phone number is required"],
     },
     message: {
       type: String,

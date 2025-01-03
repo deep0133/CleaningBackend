@@ -377,10 +377,8 @@ const submitContactForm = asyncHandler(async (req, res, next) => {
 });
 
 const getAllContact = asyncHandler(async (req, res) => {
-  const messages = await Contact.find()
-    .populate("userId", "name email")
-    .sort({ createdAt: -1 });
-  res.status(200).json(messages);
+  const messages = await Contact.find().populate("userId", "name email");
+  res.status(200).json({ success: true, data: messages });
 });
 
 // Enter Phone Number To Recieve OTP for reset password
@@ -469,6 +467,19 @@ const deleteAddress = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "address is removed successfully", true));
 });
 
+const deleteAccount = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (!user || user?.isDeleted) {
+    return res.status(404).json({ success: false, message: "User not found" });
+  }
+  user.isDeleted = true;
+
+  await user.save();
+
+  res.status(200).json(new ApiResponse(200, {}, "Account is deleted"));
+});
+
 export {
   myProfile,
   allUsers,
@@ -486,6 +497,7 @@ export {
   resetPassowrd,
   verfiyOtpAndRegister,
   deleteAddress,
+  deleteAccount,
 };
 
 // get all users:
