@@ -13,10 +13,14 @@ import walletRouter from "./routes/adminWallet.routes.js";
 import { findNearbyCleanersController } from "./utils/findNearByUser.js";
 // import { ApiError } from "./utils/apiError.js";
 import cleanerRouter from "./routes/cleaner.routes.js";
+import morgan from "morgan";
 
 const app = express();
 
 app.use(cors());
+
+// Custom format: Logs timestamp, hit API, and remote address
+app.use(morgan("dev"));
 
 app.use(
   express.json({
