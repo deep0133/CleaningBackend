@@ -1,9 +1,7 @@
 import dotenv from "dotenv";
 import connectDB from "./db/db.js";
 import { app } from "./app.js";
-import {initSocketServer} from "./socket/socketConfig.js";
-
-
+import { initSocketServer } from "./socket/socketConfig.js";
 
 import http from "http";
 
@@ -24,5 +22,3 @@ connectDB()
   .catch((err) => {
     console.log("Database connection failed !!!!", err);
   });
-
-
