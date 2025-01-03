@@ -256,10 +256,10 @@ export const acceptBooking = asyncHandler(async (req, res) => {
 });
 
 export const startService = asyncHandler(async (req, res) => {
-  const { id } = req.params;
+  const { bookingId } = req.params;
   const { otp } = req.body;
 
-  const booking = await BookingService.findById(id);
+  const booking = await BookingService.findById(bookingId);
 
   if (!booking || booking.OTP.start !== otp) {
     return res.status(400).json({ success: false, message: "Invalid OTP" });
