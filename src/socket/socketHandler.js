@@ -36,9 +36,9 @@ const handleSocketConnection = (io) => {
         "notification",
         `Cleaner ${cleanerId} has registered. <><><><><><><><><><`
       );
-      const cleaner = await Cleaner.findOne({ user: cleanerId });
-      cleaner.isOnline = true;
-      await cleaner.save();
+      // const cleaner = await Cleaner.findOne({ user: cleanerId });
+      // cleaner.isOnline = true;
+      // await cleaner.save();
     });
 
     // Handle disconnection
@@ -52,8 +52,8 @@ const handleSocketConnection = (io) => {
         if (socketId === socket.id) {
           console.log(`Cleaner ${cleanerId} disconnected.`);
           socketIdMap.delete(cleanerId);
-          const cleaner = await Cleaner.findOne({ user: cleanerId });
-          cleaner.isOnline = false;
+          // const cleaner = await Cleaner.findOne({ user: cleanerId });
+          // cleaner.isOnline = false;
           found = true;
           break;
         }
