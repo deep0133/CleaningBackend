@@ -4,6 +4,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { Cart } from "../../models/Client/cart.model.js";
 import { PaymentModel } from "../../models/Client/paymentModel.js";
 import AdminWallet from "../../models/adminWallet/adminWallet.model.js";
+import { ApiResponse } from "../../utils/apiResponse.js";
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
@@ -13,7 +14,9 @@ async function updateBookingStatus(bookingId, updates) {
   try {
     console.log("------------updateBookingStatus------------");
 
-    const booking = await BookingService.findById(bookingId).populate("Cleaner");
+    const booking = await BookingService.findById(bookingId).populate(
+      "Cleaner"
+    );
 
     console.log("----------booking data-------------: ", booking);
 
@@ -49,6 +52,24 @@ async function updateBookingStatus(bookingId, updates) {
     await cart.save();
 
     // Searching Cleaners and send notification to them
+    const [longitude, latitude] = booking.CartData[0].Location.coordinates;
+    const category = booking.CartData[0].categoryId;
+
+    console.log("----------booking data-------------: ", booking);
+    // Searching Cleaners and send notification to them
+    const sent = await findNearbyCleanersController(
+      longitude,
+      latitude,
+      bookingId,
+      category
+    );
+    if (sent) {
+      console.log("Notification sent to nearby cleaners");
+      return new ApiResponse(200, "Notification sent to nearby cleaners");
+    } else {
+      console.log("Notification already sent to nearby cleaners");
+      return new ApiResponse(400, "Notification not sent to nearby cleaners");
+    }
   } catch (error) {
     console.error("Error updating booking:", error.message);
     return new Error("Error updating booking: " + error.message);
@@ -106,8 +127,6 @@ export const verifyStripePayment = asyncHandler(async (request, response) => {
   }
 
   // Notification Send to Cleaner and store data in notification model
-
-
 
   // Acknowledge receipt of the event
   response.status(200).send("Webhook event processed");

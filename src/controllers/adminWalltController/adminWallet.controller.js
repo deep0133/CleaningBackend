@@ -8,6 +8,7 @@ const initializeWallet = async () => {
       AdminWallet = await adminWallet.create({
         total: 0,
         paymentHistory: [], // Fixed typo in field name
+        commsion: 20,
       });
     }
     return AdminWallet;

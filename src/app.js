@@ -11,7 +11,6 @@ import { verifyStripePayment } from "./controllers/payment/verifyPaymentWebhook.
 import { balanceWebhook } from "./controllers/payment/balanceWebhook.js";
 import walletRouter from "./routes/adminWallet.routes.js";
 import { findNearbyCleanersController } from "./utils/findNearByUser.js";
-// import { ApiError } from "./utils/apiError.js";
 import cleanerRouter from "./routes/cleaner.routes.js";
 import morgan from "morgan";
 
@@ -19,8 +18,21 @@ const app = express();
 
 app.use(cors());
 
-// Custom format: Logs timestamp, hit API, and remote address
-app.use(morgan("dev"));
+app.use(
+  morgan((tokens, req, res) => {
+    const currentTime = new Date().toISOString();
+    const status = tokens.status(req, res);
+    const responseTime = tokens["response-time"](req, res);
+
+    return (
+      `[${currentTime}] API Hit: ${tokens.method(req, res)} ${tokens.url(
+        req,
+        res
+      )} | ` +
+      `Status: ${status} | Time Taken: ${responseTime} ms | Remote Address: ${req.ip}`
+    );
+  })
+);
 
 app.use(
   express.json({

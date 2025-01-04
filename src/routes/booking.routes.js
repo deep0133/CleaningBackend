@@ -10,6 +10,8 @@ import {
   getCurrentBookings,
   getNearbyCleaners,
   getUserBookings,
+  sendEndOtp,
+  sendStartOtp,
   startService,
 } from "../controllers/booking/bookingController.js";
 import {
@@ -22,11 +24,13 @@ const router = Router();
 // User Actions:
 router.post("/createBooking", isAuthenticated, createBooking);
 router.post("/nearByCleaner", isAuthenticated, getNearbyCleaners);
+router.post("/getStartOtp/:bookingId", isAuthenticated, sendStartOtp);
+router.post("/getEndOtp/:bookingId", isAuthenticated, sendEndOtp);
 
 // Cleaner Actions:
 router.post("/acceptBooking/:id", isAuthenticated, acceptBooking);
-router.post("/startService", isAuthenticated, startService);
-router.post("/endService", isAuthenticated, endService);
+router.post("/startService", isAuthenticated, isCleaner, startService);
+router.post("/endService", isAuthenticated, isCleaner, endService);
 
 router.get("/getUserBookings", isAuthenticated, getUserBookings);
 router.get(
