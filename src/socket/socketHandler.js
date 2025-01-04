@@ -1,45 +1,59 @@
-
-
+import { Cleaner } from "../models/Cleaner/cleaner.model.js";
 
 const socketIdMap = new Map();
 
-
 const handleSocketConnection = (io) => {
- console.log("............socket handler function is called..................")
+  console.count(
+    "............socket handler function is called.................."
+  );
 
   io.on("connection", (socket) => {
-    
+    const data = {
+      id: socket.id,
+      ip: socket.handshake.address,
+      userAgent: socket.handshake.headers["user-agent"],
+    };
+    console.count("a user connected............with socketId : ", data);
     socket.onAny((event) => {
       console.log(`Event received: ${event}`);
     });
 
-    socket.on("user",()=>{
-      console.log("hii user welcome to the server")
-    })
+    socket.on("user", () => {
+      console.log("hii user welcome to the server");
+    });
 
     // Register cleaner by cleanerId
-    socket.on("register_cleaner", (cleanerId) => {
-
-         console.log("...................cleaner get connected.................")
-         if (socketIdMap.has(cleanerId)) {
-          console.log(`Cleaner ${cleanerId} is already connected. Updating socket ID.`);
-        }
-      // socketIdMap[cleanerId] = socket.id;
+    socket.on("register_cleaner", async (cleanerId) => {
+      console.log("...................cleaner get connected.................");
+      if (socketIdMap.has(cleanerId)) {
+        console.log(
+          `Cleaner ${cleanerId} is already connected. Updating socket ID.`
+        );
+      }
       socketIdMap.set(cleanerId, socket.id);
-      
 
-      io.emit("notification", `Cleaner ${cleanerId} has registered. <><><><><><><><><><`);
+      io.emit(
+        "notification",
+        `Cleaner ${cleanerId} has registered. <><><><><><><><><><`
+      );
+      const cleaner = await Cleaner.findOne({ user: cleanerId });
+      cleaner.isOnline = true;
+      await cleaner.save();
     });
 
     // Handle disconnection
-    socket.on("disconnect", () => {
-      console.log("user disconnected..............................................")
+    socket.on("disconnect", async () => {
+      console.log(
+        "user disconnected.............................................."
+      );
       // Find and remove the cleaner who disconnected from the map
       let found = false;
       for (const [cleanerId, socketId] of socketIdMap.entries()) {
         if (socketId === socket.id) {
           console.log(`Cleaner ${cleanerId} disconnected.`);
           socketIdMap.delete(cleanerId);
+          const cleaner = await Cleaner.findOne({ user: cleanerId });
+          cleaner.isOnline = false;
           found = true;
           break;
         }
@@ -53,4 +67,3 @@ const handleSocketConnection = (io) => {
 };
 
 export { handleSocketConnection, socketIdMap };
-

@@ -4,7 +4,6 @@ const bookingSchema = mongoose.Schema(
   {
     User: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     Cleaner: { type: mongoose.Schema.Types.ObjectId, ref: "Cleaner" },
-
     CartData: [
       // cartData (store all items from the cart)
       {
@@ -35,13 +34,19 @@ const bookingSchema = mongoose.Schema(
         },
       },
     ],
+
     BookingStatus: {
       type: String,
-      enum: ["Pending", "Confirm", "Cancel"],
+      enum: ["Pending", "Confirm", "Cancel", "Started", "Completed"],
       default: "Pending",
-    }, // when cleaner Accept : true
-    OTP: { start: { type: String }, end: { type: String } },
+    },
+    OTP: {
+      start: { type: String, default: "" },
+      end: { type: String, default: "" },
+    },
     TotalDuration: { type: Number },
+    startBooking: { type: Date },
+    endBooking: { type: Date },
     PaymentId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Payment",

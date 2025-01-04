@@ -6,6 +6,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { Cart } from "../../models/Client/cart.model.js";
 import { PaymentModel } from "../../models/Client/paymentModel.js";
 import validateTimeSlot from "../../utils/validateTimeSlot.js";
+import adminWallet from "../../models/adminWallet/adminWallet.model.js";
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
@@ -50,10 +51,6 @@ export const createBooking = asyncHandler(async (req, res) => {
     const booking = new BookingService({
       User: req.user._id, // User ID from JWT
       CartData: cart.cart,
-      OTP: {
-        start: Math.floor(1000 + Math.random() * 9000).toString(), // Random 4-digit OTP
-        end: Math.floor(1000 + Math.random() * 9000).toString(),
-      },
       TotalDuration: totalCartDuration,
     });
 
@@ -232,6 +229,8 @@ export const acceptBooking = asyncHandler(async (req, res) => {
     booking.BookingStatus = "Confirm"; // Accepted
     await booking.save({ session });
 
+    cleaner.totalBookings += 1;
+
     // Update cleaner's status
     await cleaner.save({ session });
 
@@ -255,6 +254,7 @@ export const acceptBooking = asyncHandler(async (req, res) => {
   }
 });
 
+// Testing pending...
 export const startService = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
   const { otp } = req.body;
@@ -265,7 +265,28 @@ export const startService = asyncHandler(async (req, res) => {
     return res.status(400).json({ success: false, message: "Invalid OTP" });
   }
 
-  booking.TimeSlot.start = new Date(); // Start the timer
+  const cleaner = await Cleaner.findById(booking.Cleaner);
+  // check booking time : difference should be 15 minutues
+  const now = new Date();
+  if (
+    !(
+      Math.abs(new Date(booking.CartData[0].TimeSlot.start) - now) >
+      15 * 60 * 1000
+    )
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Booking time is not valid",
+    });
+  }
+
+  cleaner.availability = false;
+  cleaner.currentBooking = bookingId;
+
+  booking.BookingStatus = "Started";
+  booking.bookings.pull(bookingId);
+  booking.startBooking = new Date(); // Start the timer
+
   await booking.save();
 
   res.status(200).json({ success: true, message: "Service started" });
@@ -275,27 +296,52 @@ export const endService = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { otp } = req.body;
 
-  const booking = await BookingService.findById(id).populate("Cleaner");
+  const booking = await BookingService.findById(id).populate("PaymentId");
+  const cleaner = await Cleaner.findById(booking.Cleaner);
+
+  if (cleaner.user.toString() !== req.user._id.toString()) {
+    return res.status(401).json({
+      success: false,
+      message: "You are not authorized to end this booking",
+    });
+  }
 
   if (!booking || booking.OTP.end !== otp) {
     return res.status(400).json({ success: false, message: "Invalid OTP" });
   }
 
-  const endTime = new Date();
-  const duration = Math.ceil((endTime - booking.TimeSlot.start) / 60000); // Minutes
+  booking.BookingStatus = "Completed";
+  booking.endBooking = new Date();
 
-  booking.TimeSlot.end = endTime;
-  booking.Duration = duration;
+  const adminWallet = await adminWallet.findOne();
+  const adminCommission = adminWallet.commission || 20;
 
   // Calculate total price (e.g., $10/hour)
-  const baseRate = 10; // Per hour
-  const extraCharge = duration > 120 ? ((duration - 120) / 60) * baseRate : 0;
-  booking.TotalPrice = booking.PaymentValue + extraCharge;
+  const paidAmountByCleaner = booking.PaymentId.PaymentValue;
 
-  booking.save();
+  // Calculate admin commission (e.g., 20%)
+  const cleanerAmountCal =
+    ((100 - adminCommission) / 100) * paidAmountByCleaner;
+  // booking.TotalPrice = booking.PaymentValue + extraCharge;
+
+  console.log("------------cleaner Ammount--------------:", cleanerAmountCal);
+
+  adminWallet.ownMoney =
+    adminWallet.ownMoney + (paidAmountByCleaner - cleanerAmountCal);
+  // udpate cleaner
+  cleaner.availability = true;
+  cleaner.currentBooking = null;
+  cleaner.earnings += cleanerAmountCal;
+
+  await adminWallet.save();
+
+  await booking.save();
+  await cleaner.save();
 
   res.status(200).json({ success: true, booking });
 });
+
+//----------------------------------------------------------------------
 
 // Get Users Booking : All Bookings
 export const getUserBookings = asyncHandler(async (req, res) => {
@@ -420,4 +466,70 @@ export const cancelBookingByAdmin = asyncHandler(async (req, res) => {
       message: "Failed to process refund. Try again later.",
     });
   }
+});
+
+// Get Request by User for start OTP
+export const sendStartOtp = asyncHandler(async (req, res) => {
+  const { bookingId } = req.params;
+
+  const booking = await BookingService.findById(bookingId);
+
+  if (!booking) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Booking not found" });
+  }
+
+  const start = new Date(booking.CartData[0].TimeSlot.start).getTime(); // Start time in milliseconds
+
+  const now = new Date();
+  if (now >= start || now >= start - 15 * 60 * 1000) {
+    // Allow access
+    console.log("User can proceed.");
+
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+
+    booking.OTP.start = otp;
+
+    await booking.save();
+
+    res.status(200).json({ success: true, message: "OTP sent", otp });
+  } else {
+    // Deny access
+    console.log("User has to wait.");
+    res.status.json({
+      success: false,
+      message: "User has to wait for the booking to start.",
+    });
+  }
+  res.json({ success: true, message: "OTP sent" });
+});
+
+// Get Request by User for end OTP
+export const sendEndOtp = asyncHandler(async (req, res) => {
+  const { bookingId } = req.params;
+
+  const booking = await BookingService.findById(bookingId);
+
+  if (!booking) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Booking not found" });
+  }
+
+  const startOtpGenerated = booking.OTP.start;
+
+  if (!startOtpGenerated) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Start OTP not generated yet" });
+  }
+
+  const otp = Math.floor(1000 + Math.random() * 9000).toString();
+
+  booking.OTP.end = otp;
+
+  await booking.save();
+
+  res.status(200).json({ success: true, message: "OTP sent", otp });
 });

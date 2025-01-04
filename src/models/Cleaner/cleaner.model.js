@@ -51,6 +51,10 @@ const cleaner = new Schema(
       type: Boolean,
       default: false,
     },
+    startBooking: {
+      type: Date,
+    },
+
     accountId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "AccountDetail",

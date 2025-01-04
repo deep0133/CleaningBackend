@@ -3,11 +3,11 @@
 
 // const sendNotification = (cleaners, notificationData) => {
 //     // Loop through the filtered list of cleaners
-  
+
 // console.log("................................send Notification is called .....................")
 // // console.log("cleaners...............",cleaners)
 //     const io = getSocketIO();
- 
+
 //     const socketIds = Object.values(socketIdMap);
 //     for(let i=0;i<socketIds.length;i++){
 //       let socketId = socketIds[i];
@@ -21,12 +21,14 @@
 
 //   };
 
-import { socketIdMap } from './socketHandler.js';
-import { getSocketIO } from './socketConfig.js';
+import { socketIdMap } from "./socketHandler.js";
+import { getSocketIO } from "./socketConfig.js";
 
 const sendNotification = (cleaners, notificationData) => {
-  console.log("................................sendNotification is called.....................");
-  
+  console.log(
+    "................................sendNotification is called....................."
+  );
+
   // Initialize Socket.IO
   const io = getSocketIO();
 
@@ -37,8 +39,11 @@ const sendNotification = (cleaners, notificationData) => {
 
     if (socketId) {
       // Send notification if the cleaner is connected
-      io.to(socketId).emit('newJobNotification', notificationData);
-      console.log(`Notification sent to cleaner: ${cleanerId}`, notificationData);
+      io.to(socketId).emit("job_request", notificationData);
+      console.log(
+        `Notification sent to cleaner: ${cleanerId}`,
+        notificationData
+      );
     } else {
       console.log(`Cleaner not connected: ${cleanerId}`);
     }
@@ -46,5 +51,3 @@ const sendNotification = (cleaners, notificationData) => {
 };
 
 export default sendNotification;
-
-  
