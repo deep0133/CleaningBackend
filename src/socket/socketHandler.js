@@ -1,6 +1,4 @@
-import { Cleaner } from "../models/Cleaner/cleaner.model.js";
-
-const socketIdMap = new Map();
+const socketIdMap = {};
 
 const handleSocketConnection = (io) => {
   console.count(
@@ -24,14 +22,21 @@ const handleSocketConnection = (io) => {
 
     // Register cleaner by cleanerId
     socket.on("register_cleaner", async (cleanerId) => {
-      console.log("...................cleaner get connected.................");
-      if (socketIdMap.has(cleanerId)) {
+      console.log(
+        "...................cleaner get connected...........cleanerId......",
+        cleanerId
+      );
+      if (cleanerId in socketIdMap) {
         console.log(
           `Cleaner ${cleanerId} is already connected. Updating socket ID.`
         );
+      } else {
+        console.log(
+          `Cleaner ${cleanerId.toString()} is not connected. Adding to the list.`
+        );
+        socketIdMap[cleanerId.toString()] = socket.id;
       }
-      socketIdMap.set(cleanerId, socket.id);
-
+      // broadcast to everyone :
       io.emit(
         "notification",
         `Cleaner ${cleanerId} has registered. <><><><><><><><><><`
@@ -48,10 +53,11 @@ const handleSocketConnection = (io) => {
       );
       // Find and remove the cleaner who disconnected from the map
       let found = false;
-      for (const [cleanerId, socketId] of socketIdMap.entries()) {
+      for (const [cleanerId, socketId] of Object.entries(socketIdMap)) {
         if (socketId === socket.id) {
           console.log(`Cleaner ${cleanerId} disconnected.`);
-          socketIdMap.delete(cleanerId);
+          // socketIdMap.delete(cleanerId);
+          delete socketIdMap[cleanerId];
           // const cleaner = await Cleaner.findOne({ user: cleanerId });
           // cleaner.isOnline = false;
           found = true;
@@ -67,3 +73,5 @@ const handleSocketConnection = (io) => {
 };
 
 export { handleSocketConnection, socketIdMap };
+
+// ngrok http http://localhost:5911

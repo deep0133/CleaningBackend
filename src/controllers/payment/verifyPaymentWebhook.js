@@ -5,6 +5,7 @@ import { Cart } from "../../models/Client/cart.model.js";
 import { PaymentModel } from "../../models/Client/paymentModel.js";
 import AdminWallet from "../../models/adminWallet/adminWallet.model.js";
 import { ApiResponse } from "../../utils/apiResponse.js";
+import { findNearbyCleanersController } from "../../utils/findNearByUser.js";
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
@@ -12,63 +13,78 @@ const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 async function updateBookingStatus(bookingId, updates) {
   try {
-    console.log("------------updateBookingStatus------------");
-
-    const booking = await BookingService.findById(bookingId).populate(
-      "Cleaner"
+    console.log(
+      "------------updateBookingStatus------------",
+      updates.PaymentStatus
     );
+    if (updates.PaymentStatus === "paid") {
+      const booking = await BookingService.findById(bookingId).populate(
+        "Cleaner"
+      );
 
-    console.log("----------booking data-------------: ", booking);
+      if (!booking || !booking.PaymentId) {
+        throw new Error("No booking found for provided ID");
+        return;
+      }
 
-    if (!booking || !booking.PaymentId) {
-      throw new Error("No booking found for provided ID");
-      return;
-    }
+      const paymentModel = await PaymentModel.findById(booking.PaymentId);
 
-    const paymentModel = await PaymentModel.findById(booking.PaymentId);
+      paymentModel.PaymentStatus = updates.PaymentStatus;
 
-    paymentModel.PaymentStatus = updates.PaymentStatus;
+      await paymentModel.save();
 
-    await paymentModel.save();
+      let adminWallet = await AdminWallet.findOne({});
+      // Check if the admin wallet exists
+      if (!adminWallet) {
+        // If not, create a new one
+        adminWallet = new AdminWallet();
+      }
 
-    let adminWallet = await AdminWallet.findOne({});
-    // Check if the admin wallet exists
-    if (!adminWallet) {
-      // If not, create a new one
-      adminWallet = new AdminWallet();
-    }
-    adminWallet.total += parseInt(paymentModel.PaymentValue, 10);
-    adminWallet.paymentHistory.push(paymentModel._id);
+      adminWallet.total += parseInt(paymentModel.PaymentValue, 10);
+      adminWallet.paymentHistory.push(paymentModel._id);
+      await adminWallet.save();
 
-    await adminWallet.save();
+      const cart = await Cart.findOne({ User: booking.User });
 
-    const cart = await Cart.findOne({ User: booking.User });
+      if (!cart) {
+        throw new Error("No cart found for provided ID");
+      }
 
-    if (!cart) {
-      throw new Error("No cart found for provided ID");
-    }
+      cart.cart = [];
+      await cart.save();
 
-    cart.cart = [];
-    await cart.save();
+      // Searching Cleaners and send notification to them
+      const [longitude, latitude] = booking.CartData[0].Location.coordinates;
+      const category = booking.CartData[0].categoryId;
 
-    // Searching Cleaners and send notification to them
-    const [longitude, latitude] = booking.CartData[0].Location.coordinates;
-    const category = booking.CartData[0].categoryId;
+      console.log(
+        "==================called to findNearbyCleanersController==================",
+        longitude,
+        latitude,
+        bookingId,
+        category
+      );
 
-    console.log("----------booking data-------------: ", booking);
-    // Searching Cleaners and send notification to them
-    const sent = await findNearbyCleanersController(
-      longitude,
-      latitude,
-      bookingId,
-      category
-    );
-    if (sent) {
-      console.log("Notification sent to nearby cleaners");
-      return new ApiResponse(200, "Notification sent to nearby cleaners");
+      // Searching Cleaners and send notification to them
+      const sent = await findNearbyCleanersController(
+        longitude,
+        latitude,
+        bookingId,
+        category
+      );
+      if (sent) {
+        console.log("Notification sent to nearby cleaners");
+        return new ApiResponse(200, "Notification sent to nearby cleaners");
+      } else {
+        console.log("Notification already sent to nearby cleaners");
+        return new ApiResponse(400, "Notification not sent to nearby cleaners");
+      }
     } else {
-      console.log("Notification already sent to nearby cleaners");
-      return new ApiResponse(400, "Notification not sent to nearby cleaners");
+      console.log(
+        "-----------------Payment not paid-----booking status------------",
+        updates.PaymentStatus
+      );
+      return "date updated on payement success";
     }
   } catch (error) {
     console.error("Error updating booking:", error.message);

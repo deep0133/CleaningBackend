@@ -4,7 +4,7 @@ import { BookingService } from "../models/Client/booking.model.js";
 import { NotificationModel } from "../models/Notification/notificationSchema.js";
 import { socketIdMap } from "../socket/socketHandler.js";
 
-export const findNearbyCleaners = async (longitude, latitude) => {
+const findNearbyCleaners = async (longitude, latitude) => {
   try {
     // Validate input
     if (!longitude || !latitude) {
@@ -29,7 +29,7 @@ export const findNearbyCleaners = async (longitude, latitude) => {
     // 77.1025
 
     // 28.7041
-    const maxRadius = 10000;
+    const maxRadius = 10000000;
     // Find nearby cleaners using $geoNear
     const nearbyCleaners = await User.aggregate([
       {
@@ -39,14 +39,16 @@ export const findNearbyCleaners = async (longitude, latitude) => {
             coordinates: [77.1025, 28.7041],
           },
           distanceField: "distance",
-          maxDistance: parseFloat(10000), // 10km in meters
+          maxDistance: parseFloat(maxRadius), // 10km in meters
           spherical: true,
           query: { role: "cleaner" },
         },
       },
     ]);
 
-    console.log(`Number of nearby cleaners found: ${nearbyCleaners.length}`);
+    console.log(
+      `=====================================================Number of nearby cleaners found: ${nearbyCleaners.length}`
+    );
     console.log("socketIdMap data ", socketIdMap);
 
     if (nearbyCleaners.length === 0) {
@@ -179,40 +181,48 @@ export const findNearbyCleanersController = async (
   } else {
     console.log("Geospatial index exists.");
   }
-  const maxRadius = 10000; // 10km in meters
+  const maxRadius = 1000; // 10km in meters
 
   // Find nearby cleaners using $geoNear
-  // const nearbyCleaners = await User.aggregate([
-  //   {
-  //     $geoNear: {
-  //       near: {
-  //         type: "Point",
-  //         coordinates: [longitude, latitude],
-  //       },
-  //       distanceField: "distance",
-  //       maxDistance: parseFloat(maxRadius),
-  //       spherical: true,
-  //       query: { role: "cleaner" },
-  //     },
-  //   },
-  //   {
-  //     $project: { _id: 1 },
-  //   },
-  // ]);
+  const nearbyCleaners = await User.aggregate([
+    {
+      $geoNear: {
+        near: {
+          type: "Point",
+          coordinates: [longitude, latitude],
+        },
+        distanceField: "distance",
+        maxDistance: parseFloat(maxRadius),
+        spherical: true,
+        query: { role: "cleaner" },
+      },
+    },
+    {
+      $project: { _id: 1 },
+    },
+  ]);
 
-  const searching = await getNearbyCleaners(
-    longitude,
-    latitude,
-    maxRadius,
-    requestedCategory // single string value
+  // const searching = await getNearbyCleaners(
+  //   longitude,
+  //   latitude,
+  //   maxRadius,
+  //   requestedCategory // single string value
+  // );
+
+  console.log(
+    "Searching nearby cleaners data....................",
+    nearbyCleaners
   );
 
-  console.log("Searching nearby cleaners data....................", searching);
+  if (!nearbyCleaners) {
+    console.log("-----------------No nearby cleaners found-----------------");
+    return false;
+  }
 
   const bookingDetail = await BookingService.findById(bookingId)
-    .populate("user")
+    .populate("User")
     .populate("PaymentId");
-  console.log("bookingDetail...............", bookingDetail);
+  console.log("-----------------bookingDetail...............");
 
   const notificationExists = await NotificationModel.findOne({
     bookingId: bookingId,
@@ -225,7 +235,7 @@ export const findNearbyCleanersController = async (
   }
 
   const notificationData = {
-    name: bookingDetail.user.name,
+    name: bookingDetail?.User?.name,
     jobType: bookingDetail.CartData[0].categoryId,
     location: bookingDetail.CartData[0].UserAddress,
     dateTime: bookingDetail.CartData[0].TimeSlot,
@@ -233,18 +243,20 @@ export const findNearbyCleanersController = async (
     message: "New cleaning request",
   };
 
-  const connectedCleanersIds = Object.values(socketIdMap);
+  // const connectedCleanersIds = Object.values(socketIdMap);
+  const connectedCleanersIds = Object.values(socketIdMap); // Get all values
+  const connectedCleanersKeys = Object.keys(socketIdMap);
+
+  console.log("------socketIdMap--------------: ", socketIdMap);
   console.log(
     "...................socketIds................",
     connectedCleanersIds
   );
 
-  if (Object.keys(socketIdMap).length > 0) {
-    sendNotification(searching.nearbyCleaners, notificationData);
+  if (connectedCleanersKeys.length > 0) {
+    sendNotification(nearbyCleaners, notificationData);
   }
-  const cleanerIds = searching.nearbyCleaners.map((cleaner) =>
-    cleaner._id.toString()
-  );
+  const cleanerIds = nearbyCleaners.map((cleaner) => cleaner._id.toString());
 
   const notifications = cleanerIds.map((cleanerId) => ({
     cleanerId,
@@ -258,7 +270,16 @@ export const findNearbyCleanersController = async (
 
   console.log(
     "Notifications sent to nearby cleaners ------ length of nearby cleaner----:",
-    searching.nearbyCleaners.length
+    nearbyCleaners.length
   );
   return true;
 };
+
+/**
+ *   { _id: new ObjectId('677285beabce87038b668e4e') },
+  { _id: new ObjectId('677285beabce87038b668e4a') },
+  { _id: new ObjectId('677285beabce87038b668e52') },
+  { _id: new ObjectId('677285beabce87038b668e4b') },
+  { _id: new ObjectId('677285beabce87038b668e50') },
+  { _id: new ObjectId('677285beabce87038b668e4d') }
+ */

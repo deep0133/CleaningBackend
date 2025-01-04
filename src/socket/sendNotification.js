@@ -28,17 +28,58 @@ const sendNotification = (cleaners, notificationData) => {
   console.log(
     "................................sendNotification is called....................."
   );
+  console.log(
+    "------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------"
+  );
 
   // Initialize Socket.IO
   const io = getSocketIO();
+  console.log("............socketMap...............", socketIdMap);
+
+  console.log("............cleaners...............", cleaners);
 
   // Loop through the list of cleaners
   cleaners.forEach((cleaner) => {
-    const cleanerId = cleaner._id.toString(); // Ensure `_id` is string
+    const cleanerId = cleaner._id.toString(); // Ensure `_id` is a string
     const socketId = socketIdMap[cleanerId]; // Get the socket ID for the cleaner
+    console.log("---socketId---", socketId);
 
     if (socketId) {
       // Send notification if the cleaner is connected
+      io.emit("job", "sending job notification to near by cleaners"); // Send notification
       io.to(socketId).emit("job_request", notificationData);
       console.log(
         `Notification sent to cleaner: ${cleanerId}`,
