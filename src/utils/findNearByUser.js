@@ -235,6 +235,7 @@ export const findNearbyCleanersController = async (
   }
 
   const notificationData = {
+    id: bookingId,
     name: bookingDetail?.User?.name,
     jobType: bookingDetail.CartData[0].categoryId,
     location: bookingDetail.CartData[0].UserAddress,
@@ -260,6 +261,7 @@ export const findNearbyCleanersController = async (
 
   const notifications = cleanerIds.map((cleanerId) => ({
     cleanerId,
+    name: bookingDetail?.User?.name,
     bookingId,
     message: "New cleaning request", // Mark as read if the cleaner is connected
     timestamp: new Date(),

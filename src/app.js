@@ -18,21 +18,7 @@ const app = express();
 
 app.use(cors());
 
-app.use(
-  morgan((tokens, req, res) => {
-    const currentTime = new Date().toISOString();
-    const status = tokens.status(req, res);
-    const responseTime = tokens["response-time"](req, res);
-
-    return (
-      `[${currentTime}] API Hit: ${tokens.method(req, res)} ${tokens.url(
-        req,
-        res
-      )} | ` +
-      `Status: ${status} | Time Taken: ${responseTime} ms | Remote Address: ${req.ip}`
-    );
-  })
-);
+app.use(morgan("dev"));
 
 app.use(
   express.json({

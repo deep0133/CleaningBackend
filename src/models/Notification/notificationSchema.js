@@ -8,9 +8,10 @@ const notificationSchema = new Schema({
   bookingId: {
     type: Schema.Types.ObjectId,
     ref: "Booking", // Ensure the model name matches your Booking model
-  
+
     // required: true,
   },
+  name: String,
   message: {
     type: String,
     // required: true, // A message should always be provided
@@ -29,7 +30,6 @@ const notificationSchema = new Schema({
   },
 });
 
-
 // Function to check if the notification has expired based on the booking's TimeSlot
 notificationSchema.methods.isNotificationExpired = function () {
   return (
@@ -38,4 +38,7 @@ notificationSchema.methods.isNotificationExpired = function () {
   );
 };
 
-export const NotificationModel = model("CleanerNotification", notificationSchema);
+export const NotificationModel = model(
+  "CleanerNotification",
+  notificationSchema
+);

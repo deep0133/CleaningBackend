@@ -58,8 +58,9 @@ async function isCleaner(req, res, next) {
 }
 
 // Middleware to authenticate admin users
-function isAdmin(req, res, next) {
-  if (!req.user || req.user.role !== "admin") {
+async function isAdmin(req, res, next) {
+  const user = await User.findById(req.user._id).select("role");
+  if (!user || user.role !== "admin") {
     return res.status(403).json({
       message: "You are not authorized to perform this action",
     });

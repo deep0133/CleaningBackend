@@ -171,6 +171,7 @@ export const acceptBooking = asyncHandler(async (req, res) => {
       .json({ success: false, message: "Booking not found" });
   }
 
+  console.log("-------Step2----------");
   // Step 2: Check if the booking has already been accepted
   if (booking.Cleaner) {
     return res.status(409).json({
@@ -178,6 +179,8 @@ export const acceptBooking = asyncHandler(async (req, res) => {
       message: "Booking already accepted by another cleaner",
     });
   }
+
+  console.log("-------Step3----------");
 
   // Step 3: Ensure cleaner is available
   const cleaner = await Cleaner.findOne({
@@ -343,6 +346,26 @@ export const endService = asyncHandler(async (req, res) => {
 
 //----------------------------------------------------------------------
 
+// Get All Bookings:
+export const getAllBookings = asyncHandler(async (req, res) => {
+  const bookings = await BookingService.find()
+    .populate({
+      path: "User",
+      select: "-password -__v -accessToken -refreshToken",
+    })
+    .populate({
+      path: "Cleaner",
+      seelct: "-bookings -__v -user",
+    })
+    .populate({
+      path: "PaymentId",
+      select: "-__v -stripeClientSecerat -bookingId",
+    })
+    .select("-OTP -__v");
+
+  res.status(200).json({ success: true, count: bookings?.length, bookings });
+});
+
 // Get Users Booking : All Bookings
 export const getUserBookings = asyncHandler(async (req, res) => {
   const bookings = await BookingService.find({ User: req.user._id })
@@ -472,7 +495,10 @@ export const cancelBookingByAdmin = asyncHandler(async (req, res) => {
 export const sendStartOtp = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
 
-  const booking = await BookingService.findById(bookingId);
+  const booking = await BookingService.findOne({
+    User: req.user._id,
+    _id: bookingId,
+  });
 
   if (!booking) {
     return res

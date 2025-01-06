@@ -1,5 +1,6 @@
 import AccountDetail from "../../models/accountDetail/accountDetail.model.js";
 import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
+import { NotificationModel } from "../../models/Notification/notificationSchema.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
 // get profile:
@@ -13,6 +14,15 @@ const getProfile = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     data: { ...cleanerDetail.toObject(), ...userDetail.toObject() },
+  });
+});
+
+const getAllCleaners = asyncHandler(async (req, res) => {
+  const cleaners = await Cleaner.find().populate("accountId");
+
+  res.status(200).json({
+    success: true,
+    data: cleaners,
   });
 });
 
@@ -52,4 +62,26 @@ const addOrUpdateAccountDetails = asyncHandler(async (req, res) => {
   });
 });
 
-export { getProfile, addOrUpdateAccountDetails };
+const getCleanerNotification = asyncHandler(async (req, res) => {
+  console.log("---getCleanerNotification------");
+  const cleaner = await NotificationModel.find({
+    cleanerId: req.user._id,
+  });
+
+  if (!cleaner) {
+    return res
+      .status(200)
+      .json({ success: true, message: "No Notification Found" });
+  }
+  res.status(200).json({
+    success: true,
+    data: cleaner,
+  });
+});
+
+export {
+  getAllCleaners,
+  getProfile,
+  addOrUpdateAccountDetails,
+  getCleanerNotification,
+};

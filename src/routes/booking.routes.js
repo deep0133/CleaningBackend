@@ -3,6 +3,7 @@ import {
   acceptBooking,
   createBooking,
   endService,
+  getAllBookings,
   getAllPastBookings,
   getAllUpcomingBookings,
   getBookingById,
@@ -42,6 +43,7 @@ router.get(
 router.get("/getBookingById/:id", isAuthenticated, getBookingById);
 
 //  -----------------------Admin Actions-----------------------:
+router.get("/getAllBookings", isAuthenticated, isAdmin, getAllBookings);
 router.get(
   "/getAllUpcomingBookings",
   isAuthenticated,

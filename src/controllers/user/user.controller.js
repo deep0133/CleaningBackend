@@ -26,6 +26,8 @@ const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Phone number and OTP are required");
   }
 
+  console.log("-------in api--------");
+
   if (
     [name, email, password, role, phoneNumber].some(
       (field) => typeof field !== "string" || field.trim() === ""
@@ -36,6 +38,7 @@ const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
 
+  console.log("----------validate fields------------");
   // Check for existing user by email or phone number
   const existedUser = await User.findOne({ $or: [{ phoneNumber }, { email }] });
   if (existedUser) {
@@ -45,12 +48,18 @@ const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
     );
   }
 
+  console.log("----------existed user------------");
+
   if (role === "cleaner" && !category) {
     throw new ApiError(400, "Category field is required for cleaners");
   }
 
+  console.log("--------verify otp--------------");
+
   // Verify OTP
   const verificationResponse = await verifyOtp(phoneNumber, otp);
+
+  console.log("---------verification detail ---------:", verificationResponse);
 
   if (!verificationResponse || verificationResponse.success === false) {
     // throw new ApiError(401, verificationResponse, "OTP verification failed");
@@ -61,6 +70,8 @@ const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
 
   const session = await mongoose.startSession();
   session.startTransaction();
+
+  console.log("-----------start session--------");
 
   try {
     // Create a new user with full details
@@ -105,6 +116,7 @@ const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
     // Commit the transaction if everything went well
     await session.commitTransaction();
 
+    console.log("----------commit transaction--------");
     // Generate tokens
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
@@ -118,7 +130,7 @@ const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
     const createdUser = await User.findById(user._id).select(
       "-password -refreshToken -accessToken"
     );
-
+    // ngrok http http://localhost:5911
     if (!createdUser) {
       throw new ApiError(
         500,
@@ -169,6 +181,8 @@ const register = asyncHandler(async (req, res) => {
   if (phoneNumber) {
     try {
       const currentStatus = await sendOtp(phoneNumber);
+
+      console.log("------------status-------------:", currentStatus);
 
       if (!currentStatus || currentStatus.success === false) {
         throw new ApiError(401, "Failed to send OTP");
