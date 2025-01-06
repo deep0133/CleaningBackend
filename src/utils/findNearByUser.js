@@ -4,153 +4,153 @@ import { BookingService } from "../models/Client/booking.model.js";
 import { NotificationModel } from "../models/Notification/notificationSchema.js";
 import { socketIdMap } from "../socket/socketHandler.js";
 
-const findNearbyCleaners = async (longitude, latitude) => {
-  try {
-    // Validate input
-    if (!longitude || !latitude) {
-      return res.status(400).json({
-        message: "Longitude and latitude are required",
-      });
-    }
+// const findNearbyCleaners = async (longitude, latitude) => {
+//   try {
+//     // Validate input
+//     if (!longitude || !latitude) {
+//       return res.status(400).json({
+//         message: "Longitude and latitude are required",
+//       });
+//     }
 
-    console.log("Finding nearby cleaners...");
+//     console.log("Finding nearby cleaners...");
 
-    // Verify geospatial index
-    const indexes = await User.collection.indexes();
-    const geoIndex = indexes.find((index) => index.key.location === "2dsphere");
+//     // Verify geospatial index
+//     const indexes = await User.collection.indexes();
+//     const geoIndex = indexes.find((index) => index.key.location === "2dsphere");
 
-    if (!geoIndex) {
-      console.log("Geospatial index is missing. Creating index...");
-      await User.collection.createIndex({ location: "2dsphere" });
-      console.log("Geospatial index created successfully.");
-    } else {
-      console.log("Geospatial index exists.");
-    }
-    // 77.1025
+//     if (!geoIndex) {
+//       console.log("Geospatial index is missing. Creating index...");
+//       await User.collection.createIndex({ location: "2dsphere" });
+//       console.log("Geospatial index created successfully.");
+//     } else {
+//       console.log("Geospatial index exists.");
+//     }
+//     // 77.1025
 
-    // 28.7041
-    const maxRadius = 10000000;
-    // Find nearby cleaners using $geoNear
-    const nearbyCleaners = await User.aggregate([
-      {
-        $geoNear: {
-          near: {
-            type: "Point",
-            coordinates: [77.1025, 28.7041],
-          },
-          distanceField: "distance",
-          maxDistance: parseFloat(maxRadius), // 10km in meters
-          spherical: true,
-          query: { role: "cleaner" },
-        },
-      },
-    ]);
+//     // 28.7041
+//     const maxRadius = 10000000;
+//     // Find nearby cleaners using $geoNear
+//     const nearbyCleaners = await User.aggregate([
+//       {
+//         $geoNear: {
+//           near: {
+//             type: "Point",
+//             coordinates: [77.1025, 28.7041],
+//           },
+//           distanceField: "distance",
+//           maxDistance: parseFloat(maxRadius), // 10km in meters
+//           spherical: true,
+//           query: { role: "cleaner" },
+//         },
+//       },
+//     ]);
 
-    console.log(
-      `=====================================================Number of nearby cleaners found: ${nearbyCleaners.length}`
-    );
-    console.log("socketIdMap data ", socketIdMap);
+//     console.log(
+//       `=====================================================Number of nearby cleaners found: ${nearbyCleaners.length}`
+//     );
+//     console.log("socketIdMap data ", socketIdMap);
 
-    if (nearbyCleaners.length === 0) {
-      return res.status(404).json({
-        message: "No nearby cleaners found",
-      });
-    }
+//     if (nearbyCleaners.length === 0) {
+//       return res.status(404).json({
+//         message: "No nearby cleaners found",
+//       });
+//     }
 
-    const notificationData = {
-      message: "New cleaning request",
-      address: "Delhi",
-      duration: "2 hours",
-      price: 200,
-    };
+//     const notificationData = {
+//       message: "New cleaning request",
+//       address: "Delhi",
+//       duration: "2 hours",
+//       price: 200,
+//     };
 
-    // Send notification to nearby cleaners
+//     // Send notification to nearby cleaners
 
-    sendNotification(nearbyCleaners, notificationData);
-  } catch (error) {
-    console.error("Error finding nearby cleaners:", error);
-  }
-};
+//     sendNotification(nearbyCleaners, notificationData);
+//   } catch (error) {
+//     console.error("Error finding nearby cleaners:", error);
+//   }
+// };
 
-const getNearbyCleaners = async (
-  longitude,
-  latitude,
-  maxRadius,
-  requestedCategory
-) => {
-  try {
-    // Validate input coordinates
-    if (!longitude || !latitude || !maxRadius) {
-      throw new Error("Longitude, latitude, and maxRadius are required.");
-    }
+// const getNearbyCleaners = async (
+//   longitude,
+//   latitude,
+//   maxRadius,
+//   requestedCategory
+// ) => {
+//   try {
+//     // Validate input coordinates
+//     if (!longitude || !latitude || !maxRadius) {
+//       throw new Error("Longitude, latitude, and maxRadius are required.");
+//     }
 
-    // Find nearby cleaners
-    const nearbyCleaners = await User.aggregate([
-      {
-        $geoNear: {
-          near: {
-            type: "Point",
-            coordinates: [longitude, latitude],
-          },
-          distanceField: "distance", // Field to store calculated distance
-          maxDistance: parseFloat(maxRadius), // Maximum distance in meters
-          spherical: true, // Use spherical calculation
-          query: {
-            role: "cleaner", // Only users with the role of cleaner
-          },
-        },
-      },
-      {
-        $lookup: {
-          from: "cleaners", // Reference the 'Cleaner' collection
-          localField: "_id", // `_id` field in User schema
-          foreignField: "user", // `user` field in Cleaner schema
-          as: "cleanerDetails", // Add cleaner details to the output
-        },
-      },
-      {
-        $unwind: "$cleanerDetails", // Unwind the `cleanerDetails` array
-      },
-      {
-        $match: {
-          "cleanerDetails.verifyByAdmin": true, // Only verified cleaners
-          "cleanerDetails.category": requestedCategory, // Match the requested service type
-        },
-      },
-      {
-        $project: {
-          _id: 1,
-          name: 1,
-          email: 1,
-          phoneNumber: 1,
-          distance: 1, // Include calculated distance
-          "cleanerDetails.category": 1,
-          "cleanerDetails.rating": 1,
-        },
-      },
-    ]);
+//     // Find nearby cleaners
+//     const nearbyCleaners = await User.aggregate([
+//       {
+//         $geoNear: {
+//           near: {
+//             type: "Point",
+//             coordinates: [longitude, latitude],
+//           },
+//           distanceField: "distance", // Field to store calculated distance
+//           maxDistance: parseFloat(maxRadius), // Maximum distance in meters
+//           spherical: true, // Use spherical calculation
+//           query: {
+//             role: "cleaner", // Only users with the role of cleaner
+//           },
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "cleaners", // Reference the 'Cleaner' collection
+//           localField: "_id", // `_id` field in User schema
+//           foreignField: "user", // `user` field in Cleaner schema
+//           as: "cleanerDetails", // Add cleaner details to the output
+//         },
+//       },
+//       {
+//         $unwind: "$cleanerDetails", // Unwind the `cleanerDetails` array
+//       },
+//       {
+//         $match: {
+//           "cleanerDetails.verifyByAdmin": true, // Only verified cleaners
+//           "cleanerDetails.category": requestedCategory, // Match the requested service type
+//         },
+//       },
+//       {
+//         $project: {
+//           _id: 1,
+//           name: 1,
+//           email: 1,
+//           phoneNumber: 1,
+//           distance: 1, // Include calculated distance
+//           "cleanerDetails.category": 1,
+//           "cleanerDetails.rating": 1,
+//         },
+//       },
+//     ]);
 
-    // Handle the case where no cleaners are found
-    if (!nearbyCleaners || nearbyCleaners.length === 0) {
-      return {
-        success: false,
-        message: "No cleaners found within the specified radius.",
-      };
-    }
+//     // Handle the case where no cleaners are found
+//     if (!nearbyCleaners || nearbyCleaners.length === 0) {
+//       return {
+//         success: false,
+//         message: "No cleaners found within the specified radius.",
+//       };
+//     }
 
-    return {
-      success: true,
-      message: "Nearby cleaners retrieved successfully.",
-      cleaners: nearbyCleaners,
-    };
-  } catch (error) {
-    console.error("Error retrieving nearby cleaners:", error.message);
-    return {
-      success: false,
-      message: "Error retrieving nearby cleaners.",
-    };
-  }
-};
+//     return {
+//       success: true,
+//       message: "Nearby cleaners retrieved successfully.",
+//       cleaners: nearbyCleaners,
+//     };
+//   } catch (error) {
+//     console.error("Error retrieving nearby cleaners:", error.message);
+//     return {
+//       success: false,
+//       message: "Error retrieving nearby cleaners.",
+//     };
+//   }
+// };
 
 export const findNearbyCleanersController = async (
   longitude,
@@ -262,9 +262,10 @@ export const findNearbyCleanersController = async (
   const notifications = cleanerIds.map((cleanerId) => ({
     cleanerId,
     name: bookingDetail?.User?.name,
+    address: bookingDetail.CartData[0].UserAddress,
     bookingId,
     message: "New cleaning request", // Mark as read if the cleaner is connected
-    timestamp: new Date(),
+    timestamp: bookingDetail.CartData[0].TimeSlot,
     isExpire: false,
   }));
 

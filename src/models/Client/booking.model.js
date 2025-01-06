@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const bookingSchema = mongoose.Schema(
   {
     User: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    Cleaner: { type: mongoose.Schema.Types.ObjectId, ref: "Cleaner" },
+    Cleaner: { type: mongoose.Schema.Types.ObjectId, ref: "cleaner" },
     CartData: [
       // cartData (store all items from the cart)
       {

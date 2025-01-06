@@ -25,8 +25,8 @@ const router = Router();
 // User Actions:
 router.post("/createBooking", isAuthenticated, createBooking);
 router.post("/nearByCleaner", isAuthenticated, getNearbyCleaners);
-router.post("/getStartOtp/:bookingId", isAuthenticated, sendStartOtp);
-router.post("/getEndOtp/:bookingId", isAuthenticated, sendEndOtp);
+router.get("/getStartOtp/:bookingId", isAuthenticated, sendStartOtp);
+router.get("/getEndOtp/:bookingId", isAuthenticated, sendEndOtp);
 
 // Cleaner Actions:
 router.post("/acceptBooking/:id", isAuthenticated, acceptBooking);

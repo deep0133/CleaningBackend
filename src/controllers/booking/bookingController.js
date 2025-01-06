@@ -190,7 +190,7 @@ export const acceptBooking = asyncHandler(async (req, res) => {
     select: "CartData.TimeSlot",
   });
 
-  console.log("---------cleaner----------", cleaner);
+  console.log("---------cleaner exits----------");
 
   if (!cleaner) {
     return res.status(400).json({
@@ -199,20 +199,30 @@ export const acceptBooking = asyncHandler(async (req, res) => {
     });
   }
 
+  console.log("---------step 4 cleaner found----------");
+
   // Step 5: Validate booking status (e.g., ensure it's not expired)
   const now = new Date();
-  if (booking.TimeSlot.start < now) {
+  if (booking.CartData[0].TimeSlot.start < now) {
     return res
       .status(400)
       .json({ success: false, message: "Cannot accept an expired booking" });
   }
+  console.log("---------step 5 booking found--- with future time slot-------");
 
   // Step 6: check bookings timeslots with current booking
   const cleanerBookings = cleaner.bookings;
 
+  console.log("---------step 6 cleaner booking found-------", cleanerBookings);
+
   const validateTimeSlotDuration = validateTimeSlot(
     cleanerBookings,
     booking.CartData[0].TimeSlot
+  );
+
+  console.log(
+    "---------Time slot check and value is ---------:",
+    validateTimeSlotDuration
   );
 
   if (!validateTimeSlotDuration) {
@@ -222,13 +232,14 @@ export const acceptBooking = asyncHandler(async (req, res) => {
     });
   }
 
+  console.log("----------step 7 -----------session started");
   // Step 7: Atomic Update - Assign the booking to the cleaner
   const session = await BookingService.startSession();
   session.startTransaction();
 
   try {
     // Assign the cleaner to the booking
-    booking.Cleaner = cleaner._id;
+    booking.Cleaner = req.user._id;
     booking.BookingStatus = "Confirm"; // Accepted
     await booking.save({ session });
 
@@ -385,6 +396,7 @@ export const getUserBookings = asyncHandler(async (req, res) => {
 
 // Get Cleaner Bookings
 export const getCleanerBookings = asyncHandler(async (req, res) => {
+  console.log("------------req.user._id--------------", req.user._id);
   const bookings = await BookingService.find({
     Cleaner: req.user._id,
   })
@@ -523,12 +535,11 @@ export const sendStartOtp = asyncHandler(async (req, res) => {
   } else {
     // Deny access
     console.log("User has to wait.");
-    res.status.json({
+    res.json({
       success: false,
       message: "User has to wait for the booking to start.",
     });
   }
-  res.json({ success: true, message: "OTP sent" });
 });
 
 // Get Request by User for end OTP

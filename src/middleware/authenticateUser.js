@@ -45,6 +45,7 @@ function isAuthenticated(req, res, next) {
 }
 
 async function isCleaner(req, res, next) {
+  console.log("is cleaner?");
   const user = await User.findById(req.user._id).select(
     "-password -isOtpVerified -accessToken -refreshToken"
   );

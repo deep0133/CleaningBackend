@@ -1,5 +1,4 @@
-import {NotificationModel} from "../../models/Notification/notificationSchema.js";
-
+import { NotificationModel } from "../../models/Notification/notificationSchema.js";
 
 export const readNotification = asyncHandler(async (req, res) => {
   const { notificationId } = req.params;

@@ -1,4 +1,8 @@
 const validateTimeSlot = (cleanerBookings, bookingTimeSlot) => {
+  console.log("---------cleanerBookings ----------", cleanerBookings);
+  console.log("---------bookingTimeSlot ----------", bookingTimeSlot);
+  if (cleanerBookings?.length === 0) return true;
+
   for (let i = 0; i < cleanerBookings.length; i++) {
     const cleanerBooking = cleanerBookings[i];
 

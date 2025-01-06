@@ -20,9 +20,10 @@ const notificationSchema = new Schema({
     type: Boolean,
     default: false, // Default to false as notifications are unread initially
   },
+  address: String,
   timestamp: {
-    type: Date,
-    default: Date.now, // Automatically set the current timestamp
+    start: { type: Date, required: true },
+    end: { type: Date, required: true },
   },
   isExpire: {
     type: Boolean,

@@ -26,8 +26,6 @@ const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Phone number and OTP are required");
   }
 
-  console.log("-------in api--------");
-
   if (
     [name, email, password, role, phoneNumber].some(
       (field) => typeof field !== "string" || field.trim() === ""
@@ -38,7 +36,6 @@ const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
 
-  console.log("----------validate fields------------");
   // Check for existing user by email or phone number
   const existedUser = await User.findOne({ $or: [{ phoneNumber }, { email }] });
   if (existedUser) {
@@ -48,30 +45,24 @@ const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
     );
   }
 
-  console.log("----------existed user------------");
-
   if (role === "cleaner" && !category) {
     throw new ApiError(400, "Category field is required for cleaners");
   }
 
-  console.log("--------verify otp--------------");
-
   // Verify OTP
-  const verificationResponse = await verifyOtp(phoneNumber, otp);
+  // const verificationResponse = await verifyOtp(phoneNumber, otp);
 
-  console.log("---------verification detail ---------:", verificationResponse);
+  console.log("---------verification otp detail ---------:");
 
-  if (!verificationResponse || verificationResponse.success === false) {
-    // throw new ApiError(401, verificationResponse, "OTP verification failed");
-    return res
-      .status(401)
-      .json(new ApiResponse(401, {}, "OTP verification failed"));
-  }
+  // if (!verificationResponse || verificationResponse.success === false) {
+  //   // throw new ApiError(401, verificationResponse, "OTP verification failed");
+  //   return res
+  //     .status(401)
+  //     .json(new ApiResponse(401, {}, "OTP verification failed"));
+  // }
 
   const session = await mongoose.startSession();
   session.startTransaction();
-
-  console.log("-----------start session--------");
 
   try {
     // Create a new user with full details
@@ -116,14 +107,12 @@ const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
     // Commit the transaction if everything went well
     await session.commitTransaction();
 
-    console.log("----------commit transaction--------");
     // Generate tokens
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
 
     user.accessToken = accessToken;
     user.refreshToken = refreshToken;
-    console.log("stored");
 
     await user.save({ validateBeforeSave: false });
 
@@ -154,7 +143,6 @@ const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
     // Only abort if we haven't committed the transaction
     if (session.inTransaction()) {
       await session.abortTransaction();
-      console.log("Transaction aborted due to error");
     }
 
     // Throw the error to propagate
@@ -180,13 +168,14 @@ const register = asyncHandler(async (req, res) => {
 
   if (phoneNumber) {
     try {
-      const currentStatus = await sendOtp(phoneNumber);
+      console.log("---------otp sent and pending verification--------");
+      // const currentStatus = await sendOtp(phoneNumber);
 
-      console.log("------------status-------------:", currentStatus);
+      // console.log("------------status-------------:", currentStatus);
 
-      if (!currentStatus || currentStatus.success === false) {
-        throw new ApiError(401, "Failed to send OTP");
-      }
+      // if (!currentStatus || currentStatus.success === false) {
+      //   throw new ApiError(401, "Failed to send OTP");
+      // }
     } catch (error) {
       console.error("Error sending OTP:", error.message || error);
       throw new ApiError(500, "Failed to send OTP");
@@ -443,14 +432,12 @@ const resetPassowrd = asyncHandler(async (req, res, next) => {
 
 const deleteAddress = asyncHandler(async (req, res) => {
   const { index, token } = req.body;
-  console.log(process.env.ACCESS_TOKEN_SECERET);
   if (!token) {
     throw new ApiError(400, "token is required");
   }
 
   const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECERET);
 
-  console.log(decoded);
   const id = decoded._id;
 
   const user = await User.findById(id);
@@ -513,9 +500,3 @@ export {
   deleteAddress,
   deleteAccount,
 };
-
-// get all users:
-export const getAllUsers = asyncHandler(async (req, res) => {
-  const users = await User.find();
-  res.status(200).json({ success: true, users });
-});
