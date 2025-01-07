@@ -15,12 +15,8 @@ export const createBooking = asyncHandler(async (req, res) => {
 
   const cart = await Cart.findById(cartId);
 
-  if (cart === null) {
+  if (cart === null || cart.cart.length === 0) {
     return res.status(404).json({ success: false, message: "Cart not found" });
-  }
-
-  if (!cart && cart?.cart.length === 0) {
-    return res.status(404).json({ success: false, message: "Cart is empty" });
   }
 
   // validate user
@@ -31,16 +27,23 @@ export const createBooking = asyncHandler(async (req, res) => {
     });
   }
 
+  const existingBooking = await BookingService.findOne({
+    User: req.user._id,
+    "CartData.categoryId": cart.cart[0].categoryId,
+    "CartData.TimeSlot.start": cart.cart[0].TimeSlot.start,
+    "CartData.TimeSlot.end": cart.cart[0].TimeSlot.end,
+  }).populate("PaymentId");
+
+  if (existingBooking && existingBooking.PaymentId.PaymentStatus) {
+    return res
+      .status(400)
+      .json({ message: "You already have a booking with the same cart data." });
+  }
+
   // calculate total price of cart items
-  const totalCartPrice = cart.cart.reduce(
-    (sum, item) => sum + item.TotalPrice,
-    0
-  );
+  const totalCartPrice = cart.cart[0].TotalPrice;
   // calculate total duration of cart items
-  const totalCartDuration = cart.cart.reduce(
-    (sum, item) => sum + item.Duration,
-    0
-  );
+  const totalCartDuration = cart.cart[0].Duration;
 
   // Begin transaction
   const session = await mongoose.startSession();
@@ -391,7 +394,7 @@ export const getUserBookings = asyncHandler(async (req, res) => {
     })
     .select("-OTP -__v");
 
-  res.status(200).json({ success: true, bookings });
+  res.status(200).json({ success: true, count: bookings?.length, bookings });
 });
 
 // Get Cleaner Bookings

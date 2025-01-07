@@ -500,3 +500,148 @@ export {
   deleteAddress,
   deleteAccount,
 };
+
+export const addCleanerAndUserByAdmin = asyncHandler(async (req, res) => {
+  const {
+    name,
+    email,
+    phoneNumber,
+    password,
+    role,
+    address,
+    category,
+    availability,
+    isOnline,
+    status = false,
+  } = req.body;
+
+  if (!phoneNumber) {
+    throw new ApiError(400, "Phone number is required");
+  }
+
+  if (
+    [name, email, password, role, phoneNumber].some(
+      (field) => typeof field !== "string" || field.trim() === ""
+    ) ||
+    !Array.isArray(address) ||
+    address.length === 0
+  ) {
+    throw new ApiError(400, "All fields are required");
+  }
+
+  // Check for existing user by email or phone number
+  const existedUser = await User.findOne({ $or: [{ phoneNumber }, { email }] });
+  if (existedUser) {
+    throw new ApiError(
+      409,
+      "User with this email or phoneNumber already exists"
+    );
+  }
+
+  if (role === "cleaner" && !category) {
+    throw new ApiError(400, "Category field is required for cleaners");
+  }
+
+  // Verify OTP
+  // const verificationResponse = await verifyOtp(phoneNumber, otp);
+
+  console.log("---------verification otp detail ---------:");
+
+  // if (!verificationResponse || verificationResponse.success === false) {
+  //   // throw new ApiError(401, verificationResponse, "OTP verification failed");
+  //   return res
+  //     .status(401)
+  //     .json(new ApiResponse(401, {}, "OTP verification failed"));
+  // }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // Create a new user with full details
+    const user = new User({
+      name,
+      email,
+      password,
+      role,
+      address,
+      phoneNumber,
+      isVerified: status,
+    });
+
+    await user.save({ session });
+
+    // Create associated Cleaner record if role is cleaner
+    if (role === "cleaner") {
+      if (!user._id) {
+        throw new ApiError(
+          500,
+          "Something went wrong while registering the user"
+        );
+      }
+      const cleaner = await Cleaner.create(
+        [
+          {
+            user: user._id,
+            category,
+            availability,
+            earning: 0,
+            isOnline,
+          },
+        ],
+        { session }
+      );
+
+      if (!cleaner || cleaner.length === 0) {
+        throw new ApiError(500, "Failed to create cleaner record");
+      }
+    }
+
+    // Commit the transaction if everything went well
+    await session.commitTransaction();
+
+    // Generate tokens
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    user.accessToken = accessToken;
+    user.refreshToken = refreshToken;
+
+    await user.save({ validateBeforeSave: false });
+
+    const createdUser = await User.findById(user._id).select(
+      "-password -refreshToken -accessToken"
+    );
+    // ngrok http http://localhost:5911
+    if (!createdUser) {
+      throw new ApiError(
+        500,
+        "Something went wrong while registering the user"
+      );
+    }
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { accessToken, refreshToken },
+          "OTP is verified and User registered successfully"
+        )
+      );
+  } catch (error) {
+    // If error happens, rollback the transaction and log the error
+    console.error("Transaction error:", error);
+
+    // Only abort if we haven't committed the transaction
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
+
+    // Throw the error to propagate
+    throw error;
+  } finally {
+    // End the session in either case (commit or abort)
+    session.endSession();
+  }
+});

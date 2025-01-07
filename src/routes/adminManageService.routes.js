@@ -5,8 +5,8 @@ import { multerUpload } from "../utils/multer.js";
 import {
   createCleaningService,
   deleteCleaningService,
-  updateCleaningService,
   getCleaningServices,
+  updateCleaningService,
 } from "../controllers/cleaner/cleaning.controllers.js";
 
 const manageServiceRouter = express.Router();

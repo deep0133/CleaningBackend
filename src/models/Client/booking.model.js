@@ -8,7 +8,7 @@ const bookingSchema = mongoose.Schema(
       // cartData (store all items from the cart)
       {
         categoryId: { type: mongoose.Schema.Types.ObjectId, ref: "Services" },
-        addOns: [{ type: mongoose.Schema.Types.ObjectId, ref: "AddOns" }],
+        addOns: { type: mongoose.Schema.Types.ObjectId, ref: "AddOns" },
         TimeSlot: {
           start: { type: Date },
           end: { type: Date },

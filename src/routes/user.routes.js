@@ -16,6 +16,7 @@ import {
   verfiyOtpAndRegister,
   updateProfile,
   deleteAccount,
+  addCleanerAndUserByAdmin,
 } from "../controllers/user/user.controller.js";
 import { isAdmin, isAuthenticated } from "../middleware/authenticateUser.js";
 const router = Router();
@@ -45,7 +46,10 @@ router.post("/contact", isAuthenticated, submitContactForm);
 router.post("/forgot/password", forgotPassword);
 router.post("/reset/password", verifyOtp);
 
-// Delete Account
+// Delete Account ----------Pending----------
 router.delete("/delete", isAuthenticated, deleteAccount);
+
+// Admin Actions:
+router.post("/addCleaner", isAuthenticated, isAdmin, addCleanerAndUserByAdmin);
 
 export default router;

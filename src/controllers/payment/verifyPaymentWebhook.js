@@ -17,22 +17,22 @@ async function updateBookingStatus(bookingId, updates) {
       "------------updateBookingStatus------------",
       updates.PaymentStatus
     );
+    const booking = await BookingService.findById(bookingId).populate(
+      "Cleaner"
+    );
+
+    if (!booking || !booking.PaymentId) {
+      throw new Error("No booking found for provided ID");
+      return;
+    }
+
+    const paymentModel = await PaymentModel.findById(booking.PaymentId);
+
+    paymentModel.PaymentStatus = updates.PaymentStatus;
+
+    await paymentModel.save();
+
     if (updates.PaymentStatus === "paid") {
-      const booking = await BookingService.findById(bookingId).populate(
-        "Cleaner"
-      );
-
-      if (!booking || !booking.PaymentId) {
-        throw new Error("No booking found for provided ID");
-        return;
-      }
-
-      const paymentModel = await PaymentModel.findById(booking.PaymentId);
-
-      paymentModel.PaymentStatus = updates.PaymentStatus;
-
-      await paymentModel.save();
-
       let adminWallet = await AdminWallet.findOne({});
       // Check if the admin wallet exists
       if (!adminWallet) {

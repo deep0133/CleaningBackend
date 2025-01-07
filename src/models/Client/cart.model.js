@@ -10,7 +10,7 @@ const cartSchema = mongoose.Schema(
           ref: "Services",
           required: true,
         },
-        addOns: [{ type: mongoose.Schema.Types.ObjectId, ref: "AddOns" }],
+        addOns: { type: mongoose.Schema.Types.ObjectId, ref: "AddOns" },
         TimeSlot: {
           start: { type: Date, required: true },
           end: { type: Date, required: true },

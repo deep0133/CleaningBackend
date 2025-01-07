@@ -30,8 +30,13 @@ router.get("/getEndOtp/:bookingId", isAuthenticated, sendEndOtp);
 
 // Cleaner Actions:
 router.post("/acceptBooking/:id", isAuthenticated, acceptBooking);
-router.post("/startService", isAuthenticated, isCleaner, startService);
-router.post("/endService", isAuthenticated, isCleaner, endService);
+router.post(
+  "/startService/:bookingId",
+  isAuthenticated,
+  isCleaner,
+  startService
+);
+router.post("/endService/:bookingId", isAuthenticated, isCleaner, endService);
 
 router.get("/getUserBookings", isAuthenticated, getUserBookings);
 router.get(

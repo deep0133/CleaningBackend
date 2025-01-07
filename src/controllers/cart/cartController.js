@@ -2,6 +2,7 @@ import { Cart } from "../../models/Client/cart.model.js";
 import AddOnModel from "../../models/Services/addons.model.js";
 import ServiceModel from "../../models/Services/services.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import { calculateHours } from "../../utils/calculateHours.js";
 
 export const getAllCartItems = asyncHandler(async (req, res) => {
   let cartItems = await Cart.findOne({ User: req.user._id }).populate({
@@ -38,12 +39,19 @@ export const getAllCartItems = asyncHandler(async (req, res) => {
 });
 
 export const addToCart = asyncHandler(async (req, res) => {
-  const { categoryId, timeSlot, userAddress, location, addOns = [] } = req.body;
+  const { categoryId, timeSlot, userAddress, location, addOns } = req.body;
 
   if (!categoryId || !timeSlot || !userAddress || !location) {
     return res.status(400).json({
       success: false,
       message: "All fields are required",
+    });
+  }
+
+  if (!addOns) {
+    return res.status(400).json({
+      success: false,
+      message: "Add-ons is required",
     });
   }
 
@@ -76,30 +84,33 @@ export const addToCart = asyncHandler(async (req, res) => {
     });
   }
 
-  let totalPrice = service.pricePerHour;
+  // let totalPrice = service.pricePerHour;
+  let totalPrice = 0;
 
-  if (addOns.length > 0) {
-    const validAddOnIds = service.addOns.map((addOn) => addOn.toString());
-    const invalidAddOns = addOns.filter(
-      (addOnId) => !validAddOnIds.includes(addOnId)
-    );
+  const validAddOnId = service?.addOns?.find(
+    (addOn) => addOn.toString() === addOns.toString()
+  );
 
-    if (invalidAddOns.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Some add-ons are not valid for this service: ${invalidAddOns.join(
-          ", "
-        )}`,
-      });
-    }
-
-    const validAddOns = await AddOnModel.find({ _id: { $in: addOns } });
-    totalPrice += validAddOns.reduce((sum, addOn) => sum + addOn.price, 0);
+  if (!validAddOnId) {
+    return res.status(400).json({
+      success: false,
+      message: `Add-ons are not valid for this service: ${validAddOnId}`,
+    });
   }
 
-  const duration = Math.round(
-    (new Date(timeSlot.end) - new Date(timeSlot.start)) / (1000 * 60)
-  );
+  const validAddOns = await AddOnModel.findOne({ _id: addOns });
+
+  if (!validAddOns) {
+    return res.status(400).json({
+      success: false,
+      message: `Addons not present in Addons collection: ${validAddOnId}`,
+    });
+  }
+
+  // calculate hours:
+  const durationInHours = calculateHours(timeSlot);
+
+  totalPrice += validAddOns.price * durationInHours;
 
   try {
     const existingCart = await Cart.findOne({ User: req.user._id });
@@ -129,7 +140,7 @@ export const addToCart = asyncHandler(async (req, res) => {
         categoryId,
         TimeSlot: timeSlot,
         addOns,
-        Duration: duration,
+        Duration: durationInHours,
         TotalPrice: totalPrice,
         UserAddress: userAddress,
         Location: location,
@@ -150,7 +161,7 @@ export const addToCart = asyncHandler(async (req, res) => {
             categoryId,
             TimeSlot: timeSlot,
             addOns,
-            Duration: duration,
+            Duration: durationInHours,
             TotalPrice: totalPrice,
             UserAddress: userAddress,
             Location: location,
@@ -180,6 +191,7 @@ export const updateCart = asyncHandler(async (req, res) => {
     User: req.user._id,
   });
 
+  console.log(cart);
   if (!cart) {
     return res.status(404).json({
       success: false,
@@ -220,9 +232,7 @@ export const updateCart = asyncHandler(async (req, res) => {
 
     cartItem.TimeSlot = timeSlot;
 
-    cartItem.Duration = Math.round(
-      (new Date(timeSlot.end) - new Date(timeSlot.start)) / (1000 * 60)
-    );
+    cartItem.Duration = calculateHours(timeSlot);
   }
 
   const service = await ServiceModel.findById(cartItem.categoryId);
@@ -233,25 +243,23 @@ export const updateCart = asyncHandler(async (req, res) => {
     });
   }
 
-  let totalPrice = service.pricePerHour;
+  // let totalPrice = service.pricePerHour;
+  let totalPrice = 0;
 
   if (addOns) {
-    const validAddOnIds = service.addOns.map((addOn) => addOn.toString());
-    const invalidAddOns = addOns.filter(
-      (addOnId) => !validAddOnIds.includes(addOnId)
+    const validAddOnIds = service.addOns.find(
+      (addOn) => addOn.toString() === addOns.toString()
     );
 
-    if (invalidAddOns.length > 0) {
+    if (!validAddOnIds) {
       return res.status(400).json({
         success: false,
-        message: `Some add-ons are not valid for this service: ${invalidAddOns.join(
-          ", "
-        )}`,
+        message: `Some add-ons are not valid for this service: ${validAddOnIds}`,
       });
     }
 
-    const validAddOns = await AddOnModel.find({ _id: { $in: addOns } });
-    totalPrice += validAddOns.reduce((sum, addOn) => sum + addOn.price, 0);
+    const validAddOns = await AddOnModel.findOne({ _id: addOns });
+    totalPrice += validAddOns.price * cartItem.Duration;
 
     cartItem.addOns = addOns;
     cartItem.TotalPrice = totalPrice;
