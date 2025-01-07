@@ -1,7 +1,6 @@
 import ServiceModel from "../../models/Services/services.model.js";
 import { validationResult } from "express-validator";
 import AddOnModel from "../../models/Services/addons.model.js";
-import { asyncHandler } from "../../utils/asyncHandler.js";
 
 const getCleaningServices = async (req, res) => {
   try {
@@ -39,7 +38,7 @@ const createCleaningService = async (req, res) => {
   let imgFileName = `${req.file.path}`;
 
   try {
-    const { name, description, pricePerHour } = req.body;
+    const { name, description } = req.body;
     let addOns = req.body.addOns;
 
     console.log("Received addOns:", addOns);
@@ -65,10 +64,8 @@ const createCleaningService = async (req, res) => {
     }
 
     // Validate required fields
-    if (!name || !pricePerHour) {
-      return res
-        .status(400)
-        .json({ message: "Name and pricePerHour are required" });
+    if (!name) {
+      return res.status(400).json({ message: "Name is required" });
     }
 
     // Convert valid IDs to ObjectId
@@ -87,7 +84,6 @@ const createCleaningService = async (req, res) => {
     const newService = new ServiceModel({
       name,
       description,
-      pricePerHour: Number(pricePerHour),
       image: imgFileName,
       addOns: cleanAddOns,
     });
