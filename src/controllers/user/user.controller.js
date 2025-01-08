@@ -7,6 +7,7 @@ import { sendOtp, verifyOtp } from "../../utils/opt.js";
 import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
+import AccountDetail from "../../models/accountDetail/accountDetail.model.js";
 
 const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
   const {
@@ -51,8 +52,6 @@ const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
 
   // Verify OTP
   const verificationResponse = await verifyOtp(phoneNumber, otp);
-
-  console.log("---------verification otp detail ---------:");
 
   if (!verificationResponse || verificationResponse.success === false) {
     // throw new ApiError(401, verificationResponse, "OTP verification failed");
@@ -167,10 +166,7 @@ const register = asyncHandler(async (req, res) => {
 
   if (phoneNumber) {
     try {
-      console.log("---------otp sent and pending verification--------");
       const currentStatus = await sendOtp(phoneNumber);
-
-      console.log("------------status-------------:", currentStatus);
 
       if (!currentStatus || currentStatus.success === false) {
         throw new ApiError(401, "Failed to send OTP");
@@ -500,7 +496,7 @@ export {
   deleteAccount,
 };
 
-export const addCleanerAndUserByAdmin = asyncHandler(async (req, res) => {
+export const createdByAdmin = asyncHandler(async (req, res) => {
   const {
     name,
     email,
@@ -509,10 +505,16 @@ export const addCleanerAndUserByAdmin = asyncHandler(async (req, res) => {
     role,
     address,
     category,
-    availability,
-    isOnline,
-    status = false,
+    status,
+    accountNumber,
+    accountName,
+    bankName,
+    accountType,
   } = req.body;
+
+  if (role !== "client" && role !== "cleaner") {
+    throw new ApiError(400, "User and Cleaner can create Account from here");
+  }
 
   if (!phoneNumber) {
     throw new ApiError(400, "Phone number is required");
@@ -541,18 +543,6 @@ export const addCleanerAndUserByAdmin = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Category field is required for cleaners");
   }
 
-  // Verify OTP
-  // const verificationResponse = await verifyOtp(phoneNumber, otp);
-
-  console.log("---------verification otp detail ---------:");
-
-  // if (!verificationResponse || verificationResponse.success === false) {
-  //   // throw new ApiError(401, verificationResponse, "OTP verification failed");
-  //   return res
-  //     .status(401)
-  //     .json(new ApiResponse(401, {}, "OTP verification failed"));
-  // }
-
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -565,7 +555,9 @@ export const addCleanerAndUserByAdmin = asyncHandler(async (req, res) => {
       role,
       address,
       phoneNumber,
-      isVerified: status,
+      isVerified: true,
+      isOtpVerified: true,
+      isActive: status,
     });
 
     await user.save({ session });
@@ -578,14 +570,34 @@ export const addCleanerAndUserByAdmin = asyncHandler(async (req, res) => {
           "Something went wrong while registering the user"
         );
       }
+
+      let bankDetails = null;
+      // Bank Detail adding
+      if (accountNumber && accountName && bankName && accountType) {
+        bankDetails = await AccountDetail.create(
+          [
+            {
+              accountNumber,
+              accountName,
+              bankName,
+              accountType,
+            },
+          ],
+          { session }
+        );
+        if (!bankDetails) {
+          throw new ApiError(500, "Failed to create bank details");
+        }
+      } else {
+        throw new ApiError(400, "AccountDetail are required for cleaners");
+      }
+
       const cleaner = await Cleaner.create(
         [
           {
             user: user._id,
             category,
-            availability,
-            earning: 0,
-            isOnline,
+            accountId: bankDetails[0]._id,
           },
         ],
         { session }
@@ -611,7 +623,6 @@ export const addCleanerAndUserByAdmin = asyncHandler(async (req, res) => {
     const createdUser = await User.findById(user._id).select(
       "-password -refreshToken -accessToken"
     );
-    // ngrok http http://localhost:5911
     if (!createdUser) {
       throw new ApiError(
         500,
@@ -621,115 +632,7 @@ export const addCleanerAndUserByAdmin = asyncHandler(async (req, res) => {
 
     return res
       .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          { accessToken, refreshToken },
-          "OTP is verified and User registered successfully"
-        )
-      );
-  } catch (error) {
-    // If error happens, rollback the transaction and log the error
-    console.error("Transaction error:", error);
-
-    // Only abort if we haven't committed the transaction
-    if (session.inTransaction()) {
-      await session.abortTransaction();
-    }
-
-    // Throw the error to propagate
-    throw error;
-  } finally {
-    // End the session in either case (commit or abort)
-    session.endSession();
-  }
-});
-
-export const addUserAndUserByAdmin = asyncHandler(async (req, res) => {
-  const {
-    name,
-    email,
-    phoneNumber,
-    password,
-    address,
-    status = false,
-  } = req.body;
-
-  if (!phoneNumber) {
-    throw new ApiError(400, "Phone number is required");
-  }
-
-  if (
-    [name, email, password, phoneNumber].some(
-      (field) => typeof field !== "string" || field.trim() === ""
-    ) ||
-    !Array.isArray(address) ||
-    address.length === 0
-  ) {
-    throw new ApiError(400, "All fields are required");
-  }
-
-  // Check for existing user by email or phone number
-  const existedUser = await User.findOne({ $or: [{ phoneNumber }, { email }] });
-  if (existedUser) {
-    throw new ApiError(
-      409,
-      "User with this email or phoneNumber already exists"
-    );
-  }
-
-  if (role === "cleaner" && !category) {
-    throw new ApiError(400, "Category field is required for cleaners");
-  }
-
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    // Create a new user with full details
-    const user = new User({
-      name,
-      email,
-      password,
-      role: "user",
-      address,
-      phoneNumber,
-      isVerified: status,
-    });
-
-    await user.save({ session });
-
-    // Commit the transaction if everything went well
-    await session.commitTransaction();
-
-    // Generate tokens
-    const accessToken = user.generateAccessToken();
-    const refreshToken = user.generateRefreshToken();
-
-    user.accessToken = accessToken;
-    user.refreshToken = refreshToken;
-
-    await user.save({ validateBeforeSave: false });
-
-    const createdUser = await User.findById(user._id).select(
-      "-password -refreshToken -accessToken"
-    );
-    if (!createdUser) {
-      throw new ApiError(
-        500,
-        "Something went wrong while registering the user"
-      );
-    }
-
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          { accessToken, refreshToken },
-          "OTP is verified and User registered successfully"
-        )
-      );
+      .json(new ApiResponse(200, { message: "Account Created" }));
   } catch (error) {
     // If error happens, rollback the transaction and log the error
     console.error("Transaction error:", error);

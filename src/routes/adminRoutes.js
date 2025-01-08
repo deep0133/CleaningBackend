@@ -1,6 +1,8 @@
 import express from "express";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
+import { createdByAdmin } from "../controllers/user/user.controller.js";
+import { isAdmin, isAuthenticated } from "../middleware/authenticateUser.js";
 const router = express.Router();
 
 router.post(
@@ -48,5 +50,7 @@ router.post(
     });
   })
 );
+
+router.post("/add", isAuthenticated, isAdmin, createdByAdmin);
 
 export default router;

@@ -63,7 +63,6 @@ const addOrUpdateAccountDetails = asyncHandler(async (req, res) => {
 });
 
 const getCleanerNotification = asyncHandler(async (req, res) => {
-  console.log("---getCleanerNotification------");
   const cleaner = await NotificationModel.find({
     cleanerId: req.user._id,
   });
