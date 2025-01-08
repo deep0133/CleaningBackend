@@ -1,3 +1,5 @@
+import { User } from "../models/user.model.js";
+
 const socketIdMap = {};
 
 const handleSocketConnection = (io) => {
@@ -21,11 +23,23 @@ const handleSocketConnection = (io) => {
     });
 
     // Register cleaner by cleanerId
-    socket.on("register_cleaner", async (cleanerId) => {
+    socket.on("register_cleaner", async ({ cleanerId, location }) => {
       console.log(
         "...................cleaner get connected...........cleanerId......",
         cleanerId
       );
+
+      if (
+        !location ||
+        !Array.isArray(location.coordinates) ||
+        location.coordinates.length !== 2
+      ) {
+        console.error(
+          "Invalid location data. Expected: { type: 'Point', coordinates: [longitude, latitude] }"
+        );
+        return;
+      }
+
       if (cleanerId in socketIdMap) {
         console.log(
           `Cleaner ${cleanerId} is already connected. Updating socket ID.`
@@ -35,6 +49,22 @@ const handleSocketConnection = (io) => {
           `Cleaner ${cleanerId.toString()} is not connected. Adding to the list.`
         );
         socketIdMap[cleanerId.toString()] = socket.id;
+      }
+      try {
+        // Update cleaner's location in the database
+        const cleaner = await User.findOne({ _id: cleanerId, role: "cleaner" });
+        if (cleaner) {
+          cleaner.location = location; // Update the location
+          await cleaner.save();
+          console.log(`Location updated for cleaner ${cleanerId}:`, location);
+        } else {
+          console.error(`Cleaner with ID ${cleanerId} not found.`);
+        }
+      } catch (error) {
+        console.error(
+          `Error updating location for cleaner ${cleanerId}:`,
+          error
+        );
       }
       // broadcast to everyone :
       io.emit(

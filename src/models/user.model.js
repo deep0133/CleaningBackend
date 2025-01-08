@@ -48,7 +48,6 @@ const userSchema = new Schema(
       }, // 'type' field as Point for GeoJSON
       coordinates: {
         type: [Number], // Longitude, Latitude
-        // required: true,
         validate: {
           validator: function (coords) {
             return coords.length === 2; // Longitude and Latitude

@@ -164,12 +164,15 @@ export const findNearbyCleanersController = async (
     return false;
   }
 
+  console.log("-------in findnear by cleaner----");
+
   if (!bookingId) {
     // throw new ApiError(400, "Booking Id is required");
     console.log("Booking Id is required");
     return false;
   }
 
+  console.log("booking Id...");
   // Verify geospatial index
   const indexes = await User.collection.indexes();
   const geoIndex = indexes.find((index) => index.key.location === "2dsphere");
