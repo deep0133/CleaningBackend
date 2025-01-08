@@ -112,73 +112,66 @@ export const addToCart = asyncHandler(async (req, res) => {
 
   totalPrice += validAddOns.price * durationInHours;
 
-  try {
-    const existingCart = await Cart.findOne({ User: req.user._id });
+  const existingCart = await Cart.findOne({ User: req.user._id });
 
-    if (existingCart) {
-      const duplicateItem = await Cart.findOne({
-        User: req.user._id,
-        cart: {
-          $elemMatch: {
-            categoryId: categoryId,
-            "TimeSlot.start": timeSlot.start,
-            "TimeSlot.end": timeSlot.end,
-            UserAddress: userAddress,
-            "Location.coordinates": location.coordinates,
-          },
+  if (existingCart) {
+    const duplicateItem = await Cart.findOne({
+      User: req.user._id,
+      cart: {
+        $elemMatch: {
+          categoryId: categoryId,
+          "TimeSlot.start": timeSlot.start,
+          "TimeSlot.end": timeSlot.end,
+          UserAddress: userAddress,
+          "Location.coordinates": location.coordinates,
         },
-      });
+      },
+    });
 
-      if (duplicateItem) {
-        return res.status(400).json({
-          success: false,
-          message: "An identical cart item already exists.",
-        });
-      }
-
-      existingCart.cart.push({
-        categoryId,
-        TimeSlot: timeSlot,
-        addOns,
-        Duration: durationInHours,
-        TotalPrice: totalPrice,
-        UserAddress: userAddress,
-        Location: location,
-      });
-
-      const updatedCart = await existingCart.save();
-
-      res.status(201).json({
-        success: true,
-        message: "Item added to cart successfully",
-        updatedCart,
-      });
-    } else {
-      const newCart = await Cart.create({
-        User: req.user._id,
-        cart: [
-          {
-            categoryId,
-            TimeSlot: timeSlot,
-            addOns,
-            Duration: durationInHours,
-            TotalPrice: totalPrice,
-            UserAddress: userAddress,
-            Location: location,
-          },
-        ],
-      });
-
-      res.status(201).json({
-        success: true,
-        message: "Item added to cart successfully",
-        newCart,
+    if (duplicateItem) {
+      return res.status(400).json({
+        success: false,
+        message: "An identical cart item already exists.",
       });
     }
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message || "Failed to add item to cart",
+
+    existingCart.cart.push({
+      categoryId,
+      TimeSlot: timeSlot,
+      addOns,
+      Duration: durationInHours,
+      TotalPrice: totalPrice,
+      UserAddress: userAddress,
+      Location: location,
+    });
+
+    const updatedCart = await existingCart.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Item added to cart successfully",
+      updatedCart,
+    });
+  } else {
+    const newCart = await Cart.create({
+      User: req.user._id,
+      cart: [
+        {
+          categoryId,
+          TimeSlot: timeSlot,
+          addOns,
+          Duration: durationInHours,
+          TotalPrice: totalPrice,
+          UserAddress: userAddress,
+          Location: location,
+        },
+      ],
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Item added to cart successfully",
+      newCart,
     });
   }
 });

@@ -12,7 +12,9 @@ import { balanceWebhook } from "./controllers/payment/balanceWebhook.js";
 import walletRouter from "./routes/adminWallet.routes.js";
 // import { findNearbyCleanersController } from "./utils/findNearByUser.js";
 import cleanerRouter from "./routes/cleaner.routes.js";
+import adminAuth from "./routes/adminRoutes.js";
 import morgan from "morgan";
+import { KnowledgeContextImpl } from "twilio/lib/rest/assistants/v1/knowledge.js";
 
 const app = express();
 
@@ -49,6 +51,7 @@ app.use("/api/v1/booking", bookingRouter);
 app.use("/api/v1/cleaner", cleanerRouter);
 
 // Admin routes
+app.use("/api/v1/admin/auth", adminAuth);
 app.use("/api/v1/admin", manageServiceRouter);
 app.use("/api/v1/admin/addons", addOnsRouter);
 app.use("/api/v1/admin/wallet", walletRouter);
