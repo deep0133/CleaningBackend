@@ -197,7 +197,10 @@ export const findNearbyCleanersController = async (
         distanceField: "distance",
         maxDistance: parseFloat(maxRadius),
         spherical: true,
-        query: { role: "cleaner" },
+        query: { 
+          role: "cleaner",
+          
+         },
       },
     },
     {

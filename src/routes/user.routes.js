@@ -17,7 +17,9 @@ import {
   updateProfile,
   deleteAccount,
 } from "../controllers/user/user.controller.js";
+import { otpSend,otpVerification } from "../controllers/otp/otp.controller.js";
 import { isAuthenticated } from "../middleware/authenticateUser.js";
+import { otpLimiter } from "../middleware/otpRateLimiter.js";
 const router = Router();
 
 // Login, Signup Route & Logout
@@ -42,7 +44,9 @@ router.get("/contact", isAuthenticated, getAllContact);
 router.post("/contact", isAuthenticated, submitContactForm);
 
 // Forgot Password & Reset Password
-router.post("/forgot/password", forgotPassword);
+router.post("/forgotPassword/sendOtp",otpLimiter,otpSend)
+router.post("/forgotPassword/otpverfication",otpVerification)
+router.post("/forgotPassword/newPassword", forgotPassword);
 router.post("/reset/password", verifyOtp);
 
 // Delete Account ----------Pending----------

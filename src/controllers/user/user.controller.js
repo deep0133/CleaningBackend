@@ -381,14 +381,36 @@ const getAllContact = asyncHandler(async (req, res) => {
 
 // Enter Phone Number To Recieve OTP for reset password
 const forgotPassword = asyncHandler(async (req, res) => {
-  const { newPassword, phoneNumber } = req.body;
+  const { newPassword,phoneNumber } = req.body;
+  // const resetToken =  req.headers['authorization']?.split(' ')[1]; 
 
-  if (!newPassword || !phoneNumber) {
-    throw new ApiError(400, "pasword or phoneNumber is missing");
+  // console.log("----------------resetToken------------");
+  //   console.log(resetToken);
+  // if(!resetToken){
+  //   throw new ApiError(404,"Token is missing")
+  // }
+  
+
+  if (!newPassword) {
+    throw new ApiError(400, "newPassword is missing");
   }
 
-  const user = await User.findOne({ phoneNumber });
 
+    // const decodedToken = jwt.verify(resetToken, process.env.RESET_TOKEN_SECERET); 
+    // if(!decodedToken){
+    //   throw new ApiError(400,"Invalid or expired Token")
+    // }
+
+    // console.log("--------------decodedToken---------------");
+    // console.log(decodedToken);
+
+    // const {phoneNumber} = decodedToken;
+    // console.log("----------------------- Decoded----PhoneNumber-------")
+    // console.log(phoneNumber);
+
+
+  const user = await User.findOne({ phoneNumber });
+  
   if (!user) {
     throw new ApiError(400, "user with this number does not exists");
   }
