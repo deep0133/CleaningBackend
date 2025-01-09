@@ -105,8 +105,8 @@ userSchema.methods.generateAccessToken = function () {
     {
       _id: this._id,
       email: this.email,
-      username: this.username,
-      fullName: this.fullName,
+      username: this.name,
+      role: this.role,
     },
     process.env.ACCESS_TOKEN_SECERET,
     {
@@ -135,23 +135,3 @@ userSchema.methods.isOtpValid = function () {
 };
 
 export const User = mongoose.model("User", userSchema);
-
-// (async () => {
-//   try {
-//     await User.syncIndexes();
-//     console.log("Indexes have been synced successfully.");
-//   } catch (error) {
-//     console.log("...................eeeeeeeeeeeeeeeeeeeer......................")
-//     console.error("Error syncing indexes:", error);
-//   }
-// })();
-
-// User.collection
-//   .createIndex({ location: "2dsphere" })
-//   .then(() => console.log("Geospatial index created successfully."))
-//   .catch((err) =>
-//     console.error(
-//       "Error creating geospatial index:;;;;;;;;;;;;;;;;;;;;;;;;;;;:::::::::::::",
-//       err
-//     )
-//   );

@@ -45,10 +45,11 @@ function isAuthenticated(req, res, next) {
 }
 
 async function isCleaner(req, res, next) {
-  console.log("is cleaner?");
   const user = await User.findById(req.user._id).select(
     "-password -isOtpVerified -accessToken -refreshToken"
   );
+
+  console.log("is cleaner?", user.role === "cleaner");
   req.cleaner_data_in_user = user;
   if (!user || user.role !== "cleaner") {
     return res.status(403).json({
