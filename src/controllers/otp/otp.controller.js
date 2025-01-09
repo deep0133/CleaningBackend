@@ -39,12 +39,18 @@ const otpSend = asyncHandler(async (req, res) => {
 
 const otpVerification = asyncHandler(async (req, res) => {
 
-  const { phoneNumber, otp,context } = req.body;
+  const { phoneNumber, otp} = req.body;
 
 
   if (!phoneNumber || !otp) {
     throw new ApiError(401, "phoneNumber and otp is required");
   }
+    
+  // context is pending for otpverification
+
+  // if(!context){
+  //   throw new ApiError(401,"add context also")
+  // }
   const user = await User.findOne({ phoneNumber });
 
   if (!user) {
@@ -63,27 +69,27 @@ const otpVerification = asyncHandler(async (req, res) => {
   user.isOtpVerified = true;
   await user.save();  
 
-  if (context === 'forgotPassword') {
+  // if (context === 'forgotPassword') {
    
-    const resetToken = jwt.sign(
-      { phoneNumber }, 
-      process.env.RESET_TOKEN_SECERET,
-      { 
-        expiresIn: process.env.RESET_TOKEN_EXPIRY
-      } 
-    );
+  //   const resetToken = jwt.sign(
+  //     { phoneNumber }, 
+  //     process.env.RESET_TOKEN_SECERET,
+  //     { 
+  //       expiresIn: process.env.RESET_TOKEN_EXPIRY
+  //     } 
+  //   );
 
-    console.log("-----------resetToken-----------");
-    console.log(resetToken)
+  //   console.log("-----------resetToken-----------");
+  //   console.log(resetToken)
       
-    if(!resetToken){
-      throw new ApiError(404,"server error")
-    }
+  //   if(!resetToken){
+  //     throw new ApiError(404,"server error")
+  //   }
 
-    return res.status(200)
-    .json(new ApiResponse(200,{user,resetToken} , "otp is verified successfully", true));
+  //   return res.status(200)
+  //   .json(new ApiResponse(200,{user,resetToken} , "otp is verified successfully", true));
 
-  }
+  // }
 
 
  return  res.status(200)

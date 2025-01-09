@@ -381,14 +381,14 @@ const getAllContact = asyncHandler(async (req, res) => {
 
 // Enter Phone Number To Recieve OTP for reset password
 const forgotPassword = asyncHandler(async (req, res) => {
-  const { newPassword } = req.body;
-  const resetToken =  req.headers['authorization']?.split(' ')[1]; 
+  const { newPassword,phoneNumber } = req.body;
+  // const resetToken =  req.headers['authorization']?.split(' ')[1]; 
 
-  console.log("----------------resetToken------------");
-    console.log(resetToken);
-  if(!resetToken){
-    throw new ApiError(404,"Token is missing")
-  }
+  // console.log("----------------resetToken------------");
+  //   console.log(resetToken);
+  // if(!resetToken){
+  //   throw new ApiError(404,"Token is missing")
+  // }
   
 
   if (!newPassword) {
@@ -396,17 +396,17 @@ const forgotPassword = asyncHandler(async (req, res) => {
   }
 
 
-    const decodedToken = jwt.verify(resetToken, process.env.RESET_TOKEN_SECERET); 
-    if(!decodedToken){
-      throw new ApiError(400,"Invalid or expired Token")
-    }
+    // const decodedToken = jwt.verify(resetToken, process.env.RESET_TOKEN_SECERET); 
+    // if(!decodedToken){
+    //   throw new ApiError(400,"Invalid or expired Token")
+    // }
 
-    console.log("--------------decodedToken---------------");
-    console.log(decodedToken);
+    // console.log("--------------decodedToken---------------");
+    // console.log(decodedToken);
 
-    const {phoneNumber} = decodedToken;
-    console.log("----------------------- Decoded----PhoneNumber-------")
-    console.log(phoneNumber);
+    // const {phoneNumber} = decodedToken;
+    // console.log("----------------------- Decoded----PhoneNumber-------")
+    // console.log(phoneNumber);
 
 
   const user = await User.findOne({ phoneNumber });
