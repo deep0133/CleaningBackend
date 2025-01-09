@@ -2,7 +2,9 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiResponse } from "../../utils/apiResponse.js";
 import { ApiError } from "../../utils/apiError.js";
 import { User } from "../../models/user.model.js";
-
+import mongoose from "mongoose";
+import AccountDetail from "../../models/accountDetail/accountDetail.model.js";
+import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 export const updateProfile = asyncHandler(async (req, res) => {
   const _id = req.user.id;
   const { name, phoneNumber, email } = req.body;
@@ -122,6 +124,8 @@ export const createdByAdmin = asyncHandler(async (req, res) => {
   if (role === "cleaner" && !category) {
     throw new ApiError(400, "Category field is required for cleaners");
   }
+
+  console.log();
 
   const session = await mongoose.startSession();
   session.startTransaction();
