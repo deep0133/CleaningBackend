@@ -3,6 +3,7 @@ import { ApiResponse } from "../../utils/apiResponse.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { sendOtp, verifyOtp } from "../../utils/opt.js";
 import { User } from '../../models/user.model.js'
+import jwt from "jsonwebtoken";
 
 
 const otpSend = asyncHandler(async (req, res) => {
@@ -11,8 +12,13 @@ const otpSend = asyncHandler(async (req, res) => {
   if (!phoneNumber) {
     throw new ApiError(401, "phoneNumber is required to send Otp");
   }
+   
+  const user = await User.findOne({phoneNumber});
 
-
+  if(!user){
+    throw new ApiError(401,"user with this phone number is already exists");
+  }
+  
   try {
     const currentStatus = await sendOtp(phoneNumber);
 
@@ -33,10 +39,10 @@ const otpSend = asyncHandler(async (req, res) => {
 
 const otpVerification = asyncHandler(async (req, res) => {
 
-  const { phoneNumber, otp } = req.body;
+  const { phoneNumber, otp,context } = req.body;
 
 
-  if (!phoneNumber && otp) {
+  if (!phoneNumber || !otp) {
     throw new ApiError(401, "phoneNumber and otp is required");
   }
   const user = await User.findOne({ phoneNumber });
@@ -54,18 +60,34 @@ const otpVerification = asyncHandler(async (req, res) => {
     throw new ApiError(401, "otp is invalid or wrong ");
 
   }
-
-
-
-
   user.isOtpVerified = true;
-  await user.save();
+  await user.save();  
 
-  res.status(200)
+  if (context === 'forgotPassword') {
+   
+    const resetToken = jwt.sign(
+      { phoneNumber }, 
+      process.env.RESET_TOKEN_SECERET,
+      { 
+        expiresIn: process.env.RESET_TOKEN_EXPIRY
+      } 
+    );
+
+    console.log("-----------resetToken-----------");
+    console.log(resetToken)
+      
+    if(!resetToken){
+      throw new ApiError(404,"server error")
+    }
+
+    return res.status(200)
+    .json(new ApiResponse(200,{user,resetToken} , "otp is verified successfully", true));
+
+  }
+
+
+ return  res.status(200)
     .json(new ApiResponse(200, { user }, "otp is verified successfully", true));
-
-
-
 })
 
 export { otpSend, otpVerification };
