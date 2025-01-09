@@ -3,7 +3,7 @@ import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import { NotificationModel } from "../../models/Notification/notificationSchema.js";
 import ReviewModel from "../../models/Review/review.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
-
+import { BookingService } from "../../models/Client/booking.model.js";
 // get profile:
 const getProfile = asyncHandler(async (req, res) => {
   const userDetail = req.cleaner_data_in_user;
@@ -81,9 +81,45 @@ const getCleanerNotification = asyncHandler(async (req, res) => {
 
 const addReview = asyncHandler(async (req, res) => {
   const { bookingId, rating, comment } = req.body;
+
+  const booking = await BookingService.findById(bookingId);
+  if (!booking) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Booking not found" });
+  }
+
+  if (booking?.User?.toString() !== req.user._id.toString()) {
+    return res.status(404).json({
+      success: false,
+      message: "You are not allowed to review this booking",
+    });
+  }
+
   const newReview = new ReviewModel({ bookingId, rating, comment });
   await newReview.save();
-  return { success: true, message: "Review added successfully!" };
+
+  const cleanerId = await booking.Cleaner;
+
+  if (cleanerId) {
+  }
+
+  const cleaner = await Cleaner.findOne({ user: cleanerId });
+
+  if (!cleaner) {
+    return res.status(404).json({
+      success: false,
+      message: "Cleaner not found",
+    });
+  }
+
+  cleaner.review.push(newReview._id);
+
+  await cleaner.save();
+
+  return res
+    .status(200)
+    .json({ success: true, message: "Review added successfully!", newReview });
 });
 
 const getAllReview = asyncHandler(async (req, res) => {

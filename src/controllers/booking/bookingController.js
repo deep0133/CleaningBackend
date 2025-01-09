@@ -48,14 +48,14 @@ export const createBooking = asyncHandler(async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
-  let adminWallet = (await adminWallet.findOne({})) || {};
-  console.log("---------admin Wallet --------:", adminWallet);
+  let adminWalletData = (await adminWallet.findOne({})) || {};
+  console.log("---------admin Wallet --------:", adminWalletData);
 
-  if (!adminWallet) {
+  if (!adminWalletData) {
     console.log(
       "-------Admin commission not set.--- default set to 10%-------"
     );
-    adminWallet.commission = 10;
+    adminWalletData.commission = 10;
   }
 
   try {
@@ -64,7 +64,7 @@ export const createBooking = asyncHandler(async (req, res) => {
       User: req.user._id, // User ID from JWT
       CartData: cart.cart,
       TotalDuration: totalCartDuration,
-      adminCommission: adminWallet.commission,
+      adminCommission: adminWalletData.commission,
     });
 
     // Createig Order
