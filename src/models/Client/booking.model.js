@@ -52,6 +52,7 @@ const bookingSchema = mongoose.Schema(
       ref: "Payment",
       required: true,
     },
+    adminCommission: Number,
   },
 
   {

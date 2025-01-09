@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import Stripe from "stripe";
-import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import { BookingService } from "../../models/Client/booking.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { Cart } from "../../models/Client/cart.model.js";
@@ -49,12 +48,23 @@ export const createBooking = asyncHandler(async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
+  let adminWallet = (await adminWallet.findOne({})) || {};
+  console.log("---------admin Wallet --------:", adminWallet);
+
+  if (!adminWallet) {
+    console.log(
+      "-------Admin commission not set.--- default set to 10%-------"
+    );
+    adminWallet.commission = 10;
+  }
+
   try {
     // Step 5: Create the booking document
     const booking = new BookingService({
       User: req.user._id, // User ID from JWT
       CartData: cart.cart,
       TotalDuration: totalCartDuration,
+      adminCommission: adminWallet.commission,
     });
 
     // Createig Order
@@ -246,7 +256,11 @@ export const acceptBooking = asyncHandler(async (req, res) => {
     booking.BookingStatus = "Confirm"; // Accepted
     await booking.save({ session });
 
+    console.log(
+      "---------- step 8 ------booking_id adding in cleaner schema----"
+    );
     cleaner.totalBookings += 1;
+    cleaner.bookings.push(booking._id);
 
     // Update cleaner's status
     await cleaner.save({ session });
@@ -369,7 +383,7 @@ export const getAllBookings = asyncHandler(async (req, res) => {
     })
     .populate({
       path: "Cleaner",
-      seelct: "-bookings -__v -user",
+      select: "-bookings -__v -user",
     })
     .populate({
       path: "PaymentId",

@@ -1,6 +1,7 @@
 import AccountDetail from "../../models/accountDetail/accountDetail.model.js";
 import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import { NotificationModel } from "../../models/Notification/notificationSchema.js";
+import ReviewModel from "../../models/Review/review.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
 // get profile:
@@ -78,9 +79,53 @@ const getCleanerNotification = asyncHandler(async (req, res) => {
   });
 });
 
+const addReview = asyncHandler(async (req, res) => {
+  const { bookingId, rating, comment } = req.body;
+  const newReview = new ReviewModel({ bookingId, rating, comment });
+  await newReview.save();
+  return { success: true, message: "Review added successfully!" };
+});
+
+const getAllReview = asyncHandler(async (req, res) => {
+  const reviews = await ReviewModel.find({})
+    .populate({
+      path: "bookingId",
+      select: "User Cleaner",
+      populate: {
+        path: "User",
+        select: "name email phoneNumber role address",
+      },
+    })
+    .sort({ created: -1 });
+  res.status(200).json({
+    success: true,
+    count: reviews?.length,
+    data: reviews,
+  });
+});
+
+const getSingleReview = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const review = await ReviewModel.findById(id).populate({
+    path: "bookingId",
+    select: "User Cleaner",
+    populate: {
+      path: "User",
+      select: "name email phoneNumber role address",
+    },
+  });
+  res.status(200).json({
+    success: true,
+    data: review,
+  });
+});
+
 export {
-  getAllCleaners,
-  getProfile,
   addOrUpdateAccountDetails,
+  getAllCleaners,
   getCleanerNotification,
+  getProfile,
+  addReview,
+  getAllReview,
+  getSingleReview,
 };

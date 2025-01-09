@@ -14,7 +14,7 @@ import walletRouter from "./routes/adminWallet.routes.js";
 import cleanerRouter from "./routes/cleaner.routes.js";
 import adminAuth from "./routes/adminRoutes.js";
 import morgan from "morgan";
-import { KnowledgeContextImpl } from "twilio/lib/rest/assistants/v1/knowledge.js";
+import disputeRouter from "./routes/dispute.routes.js";
 
 const app = express();
 
@@ -49,6 +49,9 @@ app.use("/api/v1/booking", bookingRouter);
 
 // cleaner routes
 app.use("/api/v1/cleaner", cleanerRouter);
+
+// Dispute routes
+app.use("/api/v1/dispute", disputeRouter);
 
 // Admin routes
 app.use("/api/v1/admin/auth", adminAuth);

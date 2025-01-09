@@ -31,10 +31,12 @@ const cleaner = new Schema(
         ref: "Booking",
       },
     ],
-    rating: {
-      type: Number,
-      default: 0, // Average rating from user feedback
-    },
+    review: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Review",
+      },
+    ],
     totalBookings: {
       type: Number,
       default: 0, // Total number of bookings handled by this cleaner

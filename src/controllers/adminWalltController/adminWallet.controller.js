@@ -1,5 +1,6 @@
 import adminWallet from "../../models/adminWallet/adminWallet.model.js";
 import { BookingService } from "../../models/Client/booking.model.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 // Initialize admin wallet if it doesn't exist
 const initializeWallet = async () => {
   try {
@@ -160,9 +161,43 @@ const getWalletDetails = async (req, res) => {
   }
 };
 
+const setCommission = asyncHandler(async (req, res) => {
+  const { commission } = req.body;
+
+  if (!commission) {
+    return res.status(400).json({
+      success: false,
+      message: "Commission is required",
+    });
+  }
+
+  if (isNaN(commission) && commission >= 0 && commission <= 100) {
+    return res.status(400).json({
+      success: false,
+      message: "Commission must be a number and range should be [ 0 - 100 ]",
+    });
+  }
+
+  let AdminWallet = await adminWallet.findOne();
+  if (!AdminWallet) {
+    AdminWallet = await initializeWallet();
+  }
+
+  AdminWallet.commission = commission;
+
+  await AdminWallet.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Commission updated successfully",
+    data: AdminWallet,
+  });
+});
+
 export {
   initializeWallet,
   getWalletDetails,
+  setCommission,
   updateWalletOnBooking,
   handleOrderCancellation,
 };
