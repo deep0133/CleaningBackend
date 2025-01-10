@@ -2,9 +2,7 @@ import { ApiError } from "../../utils/apiError.js";
 import { ApiResponse } from "../../utils/apiResponse.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { sendOtp, verifyOtp } from "../../utils/opt.js";
-import { User } from '../../models/user.model.js'
-import jwt from "jsonwebtoken";
-
+import { User } from "../../models/user.model.js";
 
 const otpSend = asyncHandler(async (req, res) => {
   const { phoneNumber } = req.body;
@@ -12,13 +10,13 @@ const otpSend = asyncHandler(async (req, res) => {
   if (!phoneNumber) {
     throw new ApiError(401, "phoneNumber is required to send Otp");
   }
-   
-  const user = await User.findOne({phoneNumber});
 
-  if(!user){
-    throw new ApiError(401,"user with this phone number is already exists");
+  const user = await User.findOne({ phoneNumber });
+
+  if (!user) {
+    throw new ApiError(401, "user with this phone number is already exists");
   }
-  
+
   try {
     const currentStatus = await sendOtp(phoneNumber);
 
@@ -30,22 +28,16 @@ const otpSend = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Failed to send OTP");
   }
 
-
-  res.status(200)
-    .json(new ApiResponse(200, {}, "otp sent successfully", true))
-
-
-})
+  res.status(200).json(new ApiResponse(200, {}, "otp sent successfully", true));
+});
 
 const otpVerification = asyncHandler(async (req, res) => {
-
-  const { phoneNumber, otp} = req.body;
-
+  const { phoneNumber, otp } = req.body;
 
   if (!phoneNumber || !otp) {
     throw new ApiError(401, "phoneNumber and otp is required");
   }
-    
+
   // context is pending for otpverification
 
   // if(!context){
@@ -54,34 +46,30 @@ const otpVerification = asyncHandler(async (req, res) => {
   const user = await User.findOne({ phoneNumber });
 
   if (!user) {
-    throw new ApiError(401, "user with this phoneNumber does not exists")
+    throw new ApiError(401, "user with this phoneNumber does not exists");
   }
 
   const verificationResponse = await verifyOtp(phoneNumber, otp);
 
-
-
   if (!verificationResponse.success) {
-
     throw new ApiError(401, "otp is invalid or wrong ");
-
   }
   user.isOtpVerified = true;
-  await user.save();  
+  await user.save();
 
   // if (context === 'forgotPassword') {
-   
+
   //   const resetToken = jwt.sign(
-  //     { phoneNumber }, 
+  //     { phoneNumber },
   //     process.env.RESET_TOKEN_SECERET,
-  //     { 
+  //     {
   //       expiresIn: process.env.RESET_TOKEN_EXPIRY
-  //     } 
+  //     }
   //   );
 
   //   console.log("-----------resetToken-----------");
   //   console.log(resetToken)
-      
+
   //   if(!resetToken){
   //     throw new ApiError(404,"server error")
   //   }
@@ -91,9 +79,9 @@ const otpVerification = asyncHandler(async (req, res) => {
 
   // }
 
-
- return  res.status(200)
+  return res
+    .status(200)
     .json(new ApiResponse(200, { user }, "otp is verified successfully", true));
-})
+});
 
 export { otpSend, otpVerification };

@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import Stripe from "stripe";
-import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import { BookingService } from "../../models/Client/booking.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { Cart } from "../../models/Client/cart.model.js";
@@ -8,6 +7,7 @@ import { PaymentModel } from "../../models/Client/paymentModel.js";
 import validateTimeSlot from "../../utils/validateTimeSlot.js";
 import {NotificationModel} from '../../models/Notification/notificationSchema.js'
 import adminWallet from "../../models/adminWallet/adminWallet.model.js";
+import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
@@ -50,12 +50,23 @@ export const createBooking = asyncHandler(async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
+  let adminWalletData = (await adminWallet.findOne({})) || {};
+  console.log("---------admin Wallet --------:", adminWalletData);
+
+  if (!adminWalletData) {
+    console.log(
+      "-------Admin commission not set.--- default set to 10%-------"
+    );
+    adminWalletData.commission = 10;
+  }
+
   try {
     // Step 5: Create the booking document
     const booking = new BookingService({
       User: req.user._id, // User ID from JWT
       CartData: cart.cart,
       TotalDuration: totalCartDuration,
+      adminCommission: adminWalletData.commission,
     });
 
     // Createig Order
@@ -111,98 +122,292 @@ export const createBooking = asyncHandler(async (req, res) => {
   }
 });
 
+export const getNearbyCleaners = asyncHandler(async (req, res) => {
+  // how to send location in what format should i send location
+  const { location, category } = req.body;
+
+  if (!location || !location.longitude || !location.latitude) {
+    throw new ApiError(400, "location is required");
+  }
+
+  const longitude = parseFloat(location.longitude);
+  const latitude = parseFloat(location.latitude);
+
+  const cleaners = await Cleaner.find({
+    location: {
+      $near: {
+        $geometry: {
+          type: "Point",
+          coordinates: [longitude, latitude],
+        },
+        $maxDistance: 10000, // 10 km
+      },
+    },
+    category: { $in: [category] },
+    availability: true,
+  });
+
+  if (cleaners.length === 0) {
+    res
+      .status(200)
+      .json(
+        new ApiResponse(200, {}, "no cleaner avaliable in this area ", true)
+      );
+  }
+
+  cleaners.forEach((cleaner) => {
+    if (cleaner.socketId) {
+      // Ensure cleaner is connected via socket
+      io.to(cleaner.socketId).emit("new_job_notification", {
+        title: "New Cleaning Job Available!",
+        body: `A new ${category} job is available near your location.`,
+        jobDetails: {
+          userSocketId: socketId, // Pass user socket ID if needed
+          location: { longitude, latitude },
+          category,
+        },
+      });
+    } else {
+      console.log(`Cleaner ${cleaner._id} is not connected via socket.`);
+    }
+  });
+
+  res.status(200).json(new ApiResponse(200, cleaners, "cleaners found", true));
+});
+
+// export const acceptBooking = asyncHandler(async (req, res) => {
+//   const { id } = req.params; // Booking ID from URL
+
+//   // Step 1: Start a session for atomic transaction
+//   const session = await BookingService.startSession();
+//   session.startTransaction();
+
+//   const booking = await BookingService.findById(id);
+//   if (!booking) {
+//     return res
+//       .status(404)
+//       .json({ success: false, message: "Booking not found" });
+//   }
+
+//   console.log("-------Step2----------");
+//   // Step 2: Check if the booking has already been accepted
+//   if (booking.Cleaner) {
+//     return res.status(409).json({
+//       success: false,
+//       message: "Booking already accepted by another cleaner",
+//     });
+//   }
+
+//   console.log("-------Step3----------");
+
+//   // Step 3: Ensure cleaner is available
+//   const cleaner = await Cleaner.findOne({
+//     user: req.user._id,
+//   }).populate({
+//     path: "bookings",
+//     select: "CartData.TimeSlot",
+//   });
+
+//   console.log("---------cleaner exits----------");
+
+//   if (!cleaner) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "You are not authorized to accept this booking",
+//     });
+//   }
+
+//   console.log("---------step 4 cleaner found----------");
+
+//   // Step 5: Validate booking status (e.g., ensure it's not expired)
+//   const now = new Date();
+//   if (booking.CartData[0].TimeSlot.start < now) {
+//     return res
+//       .status(400)
+//       .json({ success: false, message: "Cannot accept an expired booking" });
+//   }
+//   console.log("---------step 5 booking found--- with future time slot-------");
+
+//   // Step 6: check bookings timeslots with current booking
+//   const cleanerBookings = cleaner.bookings;
+
+//   console.log("---------step 6 cleaner booking found-------", cleanerBookings);
+
+//   const validateTimeSlotDuration = validateTimeSlot(
+//     cleanerBookings,
+//     booking.CartData[0].TimeSlot
+//   );
+
+//   console.log(
+//     "---------Time slot check and value is ---------:",
+//     validateTimeSlotDuration
+//   );
+
+//   if (!validateTimeSlotDuration) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "Time slot is not available",
+//     });
+//   }
+
+//   console.log("----------step 7 -----------session started");
+//   // Step 7: Atomic Update - Assign the booking to the cleaner
+//   const session = await BookingService.startSession();
+//   session.startTransaction();
+
+//   try {
+//     // Assign the cleaner to the booking
+//     booking.Cleaner = req.user._id;
+//     booking.BookingStatus = "Confirm"; // Accepted
+//     await booking.save({ session });
+
+//     console.log(
+//       "---------- step 8 ------booking_id adding in cleaner schema----"
+//     );
+//     cleaner.totalBookings += 1;
+//     cleaner.bookings.push(booking._id);
+
+//     // Update cleaner's status
+//     await cleaner.save({ session });
+
+//     await session.commitTransaction();
+//     session.endSession();
+
+//     // Step 8: Respond with success
+//     res.status(200).json({
+//       success: true,
+//       message: "Booking accepted",
+//       booking,
+//     });
+//   } catch (error) {
+//     await session.abortTransaction();
+//     session.endSession();
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to accept booking. Please try again.",
+//     });
+//   }
+// });
+
 export const acceptBooking = asyncHandler(async (req, res) => {
   const { id } = req.params; // Booking ID from URL
 
-  // Step 1: Find the booking
-  const booking = await BookingService.findById(id);
-  if (!booking) {
-    return res
-      .status(404)
-      .json({ success: false, message: "Booking not found" });
-  }
+  console.log("------Step1-----------id---:", req.user._id);
 
-  console.log("-------Step2----------");
-  // Step 2: Check if the booking has already been accepted
-  if (booking.Cleaner) {
-    return res.status(409).json({
-      success: false,
-      message: "Booking already accepted by another cleaner",
-    });
-  }
-
-  console.log("-------Step3----------");
-
-  // Step 3: Ensure cleaner is available
-  const cleaner = await Cleaner.findOne({
-    user: req.user._id,
-  }).populate({
-    path: "bookings",
-    select: "CartData.TimeSlot",
-  });
-
-  console.log("---------cleaner exits----------");
-
-  if (!cleaner) {
-    return res.status(400).json({
-      success: false,
-      message: "You are not authorized to accept this booking",
-    });
-  }
-
-  console.log("---------step 4 cleaner found----------");
-
-  // Step 5: Validate booking status (e.g., ensure it's not expired)
-  const now = new Date();
-  if (booking.CartData[0].TimeSlot.start < now) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Cannot accept an expired booking" });
-  }
-  console.log("---------step 5 booking found--- with future time slot-------");
-
-  // Step 6: check bookings timeslots with current booking
-  const cleanerBookings = cleaner.bookings;
-
-  console.log("---------step 6 cleaner booking found-------", cleanerBookings);
-
-  const validateTimeSlotDuration = validateTimeSlot(
-    cleanerBookings,
-    booking.CartData[0].TimeSlot
-  );
-
-  console.log(
-    "---------Time slot check and value is ---------:",
-    validateTimeSlotDuration
-  );
-
-  if (!validateTimeSlotDuration) {
-    return res.status(400).json({
-      success: false,
-      message: "Time slot is not available",
-    });
-  }
-
-  console.log("----------step 7 -----------session started");
-  // Step 7: Atomic Update - Assign the booking to the cleaner
+  // Step 1: Start a session for atomic transaction
   const session = await BookingService.startSession();
   session.startTransaction();
 
   try {
-    // Assign the cleaner to the booking
+    // Step 2: Find the booking within the transaction
+    const booking = await BookingService.findById(id).session(session);
+    if (!booking) {
+      await session.abortTransaction();
+      session.endSession();
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
+    }
+
+    console.log("-------Step2----------");
+
+    // Step 3: Check if the booking has already been accepted
+    if (booking.Cleaner) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(409).json({
+        success: false,
+        message: "Booking already accepted by another cleaner",
+      });
+    }
+
+    console.log("-------Step3----------");
+
+    // Step 4: Ensure cleaner is available
+    const cleaner = await Cleaner.findOne({
+      user: req.user._id,
+    })
+      .populate({
+        path: "bookings",
+        select: "CartData.TimeSlot",
+      })
+      .session(session);
+
+    console.log("---------cleaner exits----------");
+
+    if (!cleaner) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({
+        success: false,
+        message: "You are not authorized to accept this booking",
+      });
+    }
+
+    console.log("---------step 4 cleaner found----------");
+
+    // Step 5: Validate booking status (e.g., ensure it's not expired)
+    const now = new Date();
+    if (booking.CartData[0].TimeSlot.start < now) {
+      await session.abortTransaction();
+      session.endSession();
+      return res
+        .status(400)
+        .json({ success: false, message: "Cannot accept an expired booking" });
+    }
+    console.log(
+      "---------step 5 booking found--- with future time slot-------"
+    );
+
+    // Step 6: Check bookings timeslots with current booking
+    const cleanerBookings = cleaner.bookings;
+
+    console.log(
+      "---------step 6 cleaner booking found-------",
+      cleanerBookings
+    );
+
+    const validateTimeSlotDuration = validateTimeSlot(
+      cleanerBookings,
+      booking.CartData[0].TimeSlot
+    );
+
+    console.log(
+      "---------Time slot check and value is ---------:",
+      validateTimeSlotDuration
+    );
+
+    if (!validateTimeSlotDuration) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({
+        success: false,
+        message: "Time slot is not available",
+      });
+    }
+
+    console.log("----------step 7 -----------session started");
+
+    // Step 7: Assign the booking to the cleaner
     booking.Cleaner = req.user._id;
     booking.BookingStatus = "Confirm"; // Accepted
     await booking.save({ session });
 
+    console.log(
+      "---------- step 8 ------booking_id adding in cleaner schema----"
+    );
     cleaner.totalBookings += 1;
+    cleaner.bookings.push(booking._id);
 
     // Update cleaner's status
     await cleaner.save({ session });
 
+    // Step 8: Commit the transaction
     await session.commitTransaction();
     session.endSession();
 
-    // Step 8: Respond with success
+    // Respond with success
     res.status(200).json({
       success: true,
       message: "Booking accepted",
@@ -317,7 +522,7 @@ export const getAllBookings = asyncHandler(async (req, res) => {
     })
     .populate({
       path: "Cleaner",
-      seelct: "-bookings -__v -user",
+      select: "-bookings -__v -user",
     })
     .populate({
       path: "PaymentId",

@@ -1,8 +1,9 @@
 import AccountDetail from "../../models/accountDetail/accountDetail.model.js";
 import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import { NotificationModel } from "../../models/Notification/notificationSchema.js";
+import ReviewModel from "../../models/Review/review.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
-import {ApiError} from '../../utils/apiError.js'
+import { BookingService } from "../../models/Client/booking.model.js";import {ApiError} from '../../utils/apiError.js'
 
 // get profile:
 const getProfile = asyncHandler(async (req, res) => {
@@ -64,6 +65,40 @@ const addOrUpdateAccountDetails = asyncHandler(async (req, res) => {
 });
 
 const getCleanerNotification = asyncHandler(async (req, res) => {
+  console.log(
+    "------------------------------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------------------------------"
+  );
+  // const cleaner = await NotificationModel.find({
+  //   cleanerId: req.user._id,
+  // }).populate({
+  //   path: "bookingId",
+  //   select: "PaymentId",
+  //   populate: {
+  //     path: "PaymentId",
+  //     select: "_id PaymentValue PaymentStatus",
+  //   },
+  // });
   const cleaner = await NotificationModel.find({
     cleanerId: req.user._id,
   }).populate({
@@ -113,9 +148,89 @@ const getCleanerNotification = asyncHandler(async (req, res) => {
   });
 });
 
+const addReview = asyncHandler(async (req, res) => {
+  const { bookingId, rating, comment } = req.body;
+
+  const booking = await BookingService.findById(bookingId);
+  if (!booking) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Booking not found" });
+  }
+
+  if (booking?.User?.toString() !== req.user._id.toString()) {
+    return res.status(404).json({
+      success: false,
+      message: "You are not allowed to review this booking",
+    });
+  }
+
+  const newReview = new ReviewModel({ bookingId, rating, comment });
+  await newReview.save();
+
+  const cleanerId = await booking.Cleaner;
+
+  if (cleanerId) {
+  }
+
+  const cleaner = await Cleaner.findOne({ user: cleanerId });
+
+  if (!cleaner) {
+    return res.status(404).json({
+      success: false,
+      message: "Cleaner not found",
+    });
+  }
+
+  cleaner.review.push(newReview._id);
+
+  await cleaner.save();
+
+  return res
+    .status(200)
+    .json({ success: true, message: "Review added successfully!", newReview });
+});
+
+const getAllReview = asyncHandler(async (req, res) => {
+  const reviews = await ReviewModel.find({})
+    .populate({
+      path: "bookingId",
+      select: "User Cleaner",
+      populate: {
+        path: "User",
+        select: "name email phoneNumber role address",
+      },
+    })
+    .sort({ created: -1 });
+  res.status(200).json({
+    success: true,
+    count: reviews?.length,
+    data: reviews,
+  });
+});
+
+const getSingleReview = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const review = await ReviewModel.findById(id).populate({
+    path: "bookingId",
+    select: "User Cleaner",
+    populate: {
+      path: "User",
+      select: "name email phoneNumber role address",
+    },
+  });
+  res.status(200).json({
+    success: true,
+    data: review,
+  });
+});
+
 export {
-  getAllCleaners,
-  getProfile,
   addOrUpdateAccountDetails,
+  getAllCleaners,
   getCleanerNotification,
+  getProfile,
+  addReview,
+  getAllReview,
+  getSingleReview,
 };

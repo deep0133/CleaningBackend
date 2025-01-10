@@ -4,6 +4,7 @@ import {
   getWalletDetails,
   updateWalletOnBooking,
   handleOrderCancellation,
+  setCommission,
 } from "../controllers/adminWalltController/adminWallet.controller.js";
 
 const walletRouter = express.Router();
@@ -21,5 +22,7 @@ walletRouter.post(
   isAdmin,
   handleOrderCancellation
 );
+
+walletRouter.post("/setCommission", isAuthenticated, isAdmin, setCommission);
 
 export default walletRouter;
