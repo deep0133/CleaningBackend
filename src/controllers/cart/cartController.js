@@ -1,3 +1,4 @@
+import { BookingService } from "../../models/Client/booking.model.js";
 import { Cart } from "../../models/Client/cart.model.js";
 import AddOnModel from "../../models/Services/addons.model.js";
 import ServiceModel from "../../models/Services/services.model.js";
@@ -5,10 +6,9 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { calculateHours } from "../../utils/calculateHours.js";
 
 export const getAllCartItems = asyncHandler(async (req, res) => {
-  let cartItems = await Cart.findOne({ User: req.user._id }).populate({
-    path: "cart.categoryId",
-    select: "name -_id",
-  });
+  let cartItems = await Cart.findOne({ User: req.user._id });
+
+  console.log("-------get all carts-------:");
 
   if (!cartItems) {
     return res.status(200).json({
@@ -62,6 +62,8 @@ export const addToCart = asyncHandler(async (req, res) => {
     });
   }
 
+  console.log("--------step 1 --- time checking---------------");
+
   if (new Date(timeSlot.start) >= new Date(timeSlot.end)) {
     return res.status(400).json({
       success: false,
@@ -91,6 +93,7 @@ export const addToCart = asyncHandler(async (req, res) => {
     (addOn) => addOn.toString() === addOns.toString()
   );
 
+  console.log("--------step 2 --- addOns checking---------------");
   if (!validAddOnId) {
     return res.status(400).json({
       success: false,
@@ -114,46 +117,74 @@ export const addToCart = asyncHandler(async (req, res) => {
 
   const existingCart = await Cart.findOne({ User: req.user._id });
 
+  // if user already have any item in cart then make them to complete payment then try again to book other service OR remove item from cart
   if (existingCart) {
-    const duplicateItem = await Cart.findOne({
-      User: req.user._id,
-      cart: {
-        $elemMatch: {
-          categoryId: categoryId,
-          "TimeSlot.start": timeSlot.start,
-          "TimeSlot.end": timeSlot.end,
-          UserAddress: userAddress,
-          "Location.coordinates": location.coordinates,
-        },
-      },
-    });
+    // const duplicateItem = await Cart.findOne({
+    //   User: req.user._id,
+    //   cart: {
+    //     $elemMatch: {
+    //       categoryId: categoryId,
+    //       "TimeSlot.start": timeSlot.start,
+    //       "TimeSlot.end": timeSlot.end,
+    //       UserAddress: userAddress,
+    //       "Location.coordinates": location.coordinates,
+    //     },
+    //   },
+    // });
 
-    if (duplicateItem) {
-      return res.status(400).json({
-        success: false,
-        message: "An identical cart item already exists.",
+    // if (duplicateItem) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "An identical cart item already exists.",
+    //   });
+    // }
+
+    // existingCart.cart.push({
+    //   categoryId,
+    //   TimeSlot: timeSlot,
+    //   addOns,
+    //   Duration: durationInHours,
+    //   TotalPrice: totalPrice,
+    //   UserAddress: userAddress,
+    //   Location: location,
+    // });
+
+    // const updatedCart = await existingCart.save();
+
+    console.log("----existing cart -----------:");
+    console.log("----existing cart -----------:");
+    console.log("----existing cart -----------:");
+    console.log("----existing cart -----------:", existingCart);
+    console.log("----existing cart -----------:");
+    console.log("----existing cart -----------:");
+    console.log("----existing cart -----------:");
+    console.log("----existing cart -----------:");
+    if (existingCart?.cart?.length > 0) {
+      console.log("----cart found-------------");
+      res.status(201).json({
+        success: true,
+        message: "Complete payment of cart item first or remove item from cart",
+      });
+    } else {
+      existingCart.cart.push({
+        categoryId,
+        TimeSlot: timeSlot,
+        addOns,
+        Duration: durationInHours,
+        TotalPrice: totalPrice,
+        UserAddress: userAddress,
+        Location: location,
+      });
+      await existingCart.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Item added to cart successfully",
+        newCart: existingCart,
       });
     }
-
-    existingCart.cart.push({
-      categoryId,
-      TimeSlot: timeSlot,
-      addOns,
-      Duration: durationInHours,
-      TotalPrice: totalPrice,
-      UserAddress: userAddress,
-      Location: location,
-    });
-
-    const updatedCart = await existingCart.save();
-
-    res.status(201).json({
-      success: true,
-      message: "Item added to cart successfully",
-      updatedCart,
-    });
   } else {
-    const newCart = await Cart.create({
+    const newCart = new Cart({
       User: req.user._id,
       cart: [
         {
@@ -168,6 +199,9 @@ export const addToCart = asyncHandler(async (req, res) => {
       ],
     });
 
+    await newCart.save();
+
+    console.log("----cart added -------------", newCart);
     res.status(201).json({
       success: true,
       message: "Item added to cart successfully",
@@ -287,6 +321,37 @@ export const deleteCart = asyncHandler(async (req, res) => {
       success: false,
       message: "You are not authorized to delete this cart item",
     });
+  }
+
+  const removableStatuses = [
+    "amount_capturable",
+    "canceled",
+    "created",
+    "partially_funded",
+    "failed",
+    "processing",
+  ];
+
+  // Find the booking
+  const booking = await BookingService.findOne({
+    User: req.user._id,
+    "CartData._id": req.params.cartId, // Assume cartId comes from params
+  }).populate({
+    path: "PaymentId",
+    select: "PaymentStatus",
+  });
+
+  // Check if booking exist
+  if (booking) {
+    // Check if the payment status is in the removable statuses
+    if (removableStatuses.includes(booking.PaymentId.PaymentStatus)) {
+      // Delete the booking
+      await BookingService.deleteOne({ _id: booking._id });
+
+      console.log(
+        `Booking deleted because PaymentStatus is '${booking.PaymentId.PaymentStatus}'`
+      );
+    }
   }
 
   cart.cart = cart.cart.filter((item) => item._id.toString() !== cartId);

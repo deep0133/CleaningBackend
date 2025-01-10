@@ -15,15 +15,16 @@ async function updateBookingStatus(bookingId, updates) {
   try {
     console.log(
       "------------updateBookingStatus------------",
-      updates.PaymentStatus
+      updates.PaymentStatus,
+      " ------------------ bookingId-----------:",
+      bookingId
     );
     const booking = await BookingService.findById(bookingId).populate(
       "Cleaner"
     );
 
-    if (!booking || !booking.PaymentId) {
+    if (!booking) {
       throw new Error("No booking found for provided ID");
-      return;
     }
 
     const paymentModel = await PaymentModel.findById(booking.PaymentId);

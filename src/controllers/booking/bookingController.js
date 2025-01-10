@@ -15,10 +15,18 @@ export const createBooking = asyncHandler(async (req, res) => {
 
   const cart = await Cart.findById(cartId);
 
+  console.log("--------step 1-------check cart,", cart);
   if (cart === null || cart.cart.length === 0) {
     return res.status(404).json({ success: false, message: "Cart not found" });
   }
 
+  if (cart.cart.length !== 1) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Cart should have only one item" });
+  }
+
+  console.log("--------step 2-------check cart time slot");
   // validate user
   if (cart.User.toString() !== req.user._id.toString()) {
     return res.status(401).json({
@@ -34,6 +42,10 @@ export const createBooking = asyncHandler(async (req, res) => {
     "CartData.TimeSlot.end": cart.cart[0].TimeSlot.end,
   }).populate("PaymentId");
 
+  console.log(
+    "---------step 3 ---existing booking ---- checking-----------:",
+    existingBooking
+  );
   if (existingBooking && existingBooking.PaymentId.PaymentStatus) {
     return res
       .status(400)
@@ -113,6 +125,8 @@ export const createBooking = asyncHandler(async (req, res) => {
     // Abort the transaction in case of failure
     await session.abortTransaction();
     session.endSession();
+
+    console.log("-------------Failed---------:", error.message);
 
     res.status(500).json({
       success: false,
@@ -344,7 +358,7 @@ export const acceptBooking = asyncHandler(async (req, res) => {
       });
     }
 
-    console.log("---------step 4 cleaner found----------");
+    console.log("---------step 4 cleaner not found----------");
 
     // Step 5: Validate booking status (e.g., ensure it's not expired)
     const now = new Date();
@@ -415,6 +429,11 @@ export const acceptBooking = asyncHandler(async (req, res) => {
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
+
+    console.log(
+      "-----------------Error in catch block-------------:",
+      error.message
+    );
 
     res.status(500).json({
       success: false,
