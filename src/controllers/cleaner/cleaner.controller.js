@@ -64,15 +64,74 @@ const addOrUpdateAccountDetails = asyncHandler(async (req, res) => {
 });
 
 const getCleanerNotification = asyncHandler(async (req, res) => {
+  console.log(
+    "------------------------------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------------------------------------------------------"
+  );
+  // const cleaner = await NotificationModel.find({
+  //   cleanerId: req.user._id,
+  // }).populate({
+  //   path: "bookingId",
+  //   select: "PaymentId",
+  //   populate: {
+  //     path: "PaymentId",
+  //     select: "_id PaymentValue PaymentStatus",
+  //   },
+  // });
   const cleaner = await NotificationModel.find({
     cleanerId: req.user._id,
+  }).populate({
+    path: "bookingId",
+    select: "_id PaymentId", // Include bookingId and PaymentId in the response
+    populate: {
+      path: "PaymentId",
+      select: "PaymentValue", // Fields to include from PaymentId
+    },
   });
+  // const data = cleaner.map((notification) => {
+  //   const { bookingId, ...rest } = notification.toObject();
+  //   const { PaymentId, PaymentValue, ...restPayment } = bookingId.PaymentId;
+  //   return {
+  //     ...rest,
+  //     bookingId: {
+  //       bookingId,
+  //       PaymentId: {
+  //         PaymentId,
+  //         PaymentValue,
+  //       },
+  //     },
+  //   };
+  // });
 
-  if (!cleaner) {
-    return res
-      .status(200)
-      .json({ success: true, message: "No Notification Found" });
+  console.log("-----------cleaner---------Notificaitons-------------", cleaner);
+
+  if (!cleaner || cleaner.length === 0) {
+    return res.status(404).json({
+      success: false,
+      message: "No notifications found for the cleaner.",
+    });
   }
+
   res.status(200).json({
     success: true,
     data: cleaner,
