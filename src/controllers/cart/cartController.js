@@ -5,6 +5,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { calculateHours } from "../../utils/calculateHours.js";
 
 export const getAllCartItems = asyncHandler(async (req, res) => {
+  
   let cartItems = await Cart.findOne({ User: req.user._id }).populate({
     path: "cart.categoryId",
     select: "name -_id",

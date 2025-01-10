@@ -94,6 +94,7 @@ async function updateBookingStatus(bookingId, updates) {
 
 async function handleEvent(eventType, paymentIntent) {
   const bookingId = paymentIntent.metadata.bookingModelId;
+  console.log('bookingId',bookingId)
 
   const statusUpdates = {
     "payment_intent.amount_capturable_updated": {

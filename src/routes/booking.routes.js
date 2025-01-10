@@ -9,7 +9,7 @@ import {
   getBookingById,
   getCleanerBookings,
   getCurrentBookings,
-  getNearbyCleaners,
+  // getNearbyCleaners,
   getUserBookings,
   sendEndOtp,
   sendStartOtp,
@@ -24,7 +24,7 @@ const router = Router();
 
 // User Actions:
 router.post("/createBooking", isAuthenticated, createBooking);
-router.post("/nearByCleaner", isAuthenticated, getNearbyCleaners);
+// router.post("/nearByCleaner", isAuthenticated, getNearbyCleaners);
 router.get("/getStartOtp/:bookingId", isAuthenticated, sendStartOtp);
 router.get("/getEndOtp/:bookingId", isAuthenticated, sendEndOtp);
 

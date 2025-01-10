@@ -2,6 +2,7 @@ import AccountDetail from "../../models/accountDetail/accountDetail.model.js";
 import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import { NotificationModel } from "../../models/Notification/notificationSchema.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import {ApiError} from '../../utils/apiError.js'
 
 // get profile:
 const getProfile = asyncHandler(async (req, res) => {
@@ -65,13 +66,47 @@ const addOrUpdateAccountDetails = asyncHandler(async (req, res) => {
 const getCleanerNotification = asyncHandler(async (req, res) => {
   const cleaner = await NotificationModel.find({
     cleanerId: req.user._id,
+  }).populate({
+    path: "bookingId", 
+    select: "BookingStatus", 
   });
+  console.log("-----------------------cleaners----------------")
+  console.log(cleaner)
 
+  
   if (!cleaner) {
     return res
       .status(200)
       .json({ success: true, message: "No Notification Found" });
   }
+
+
+
+  console.log("-----------------------booking--------------");
+  const currentTime =  Date.now()
+  for (let notification of cleaner) {
+    if(notification.isExpire){
+      throw new ApiError(401,"notification is already expired")
+    }
+
+    const booking = notification.bookingId;
+       console.log("--------bookingStatus----------",booking.BookingStatus);
+
+   if(notification.timestamp.start < currentTime ){
+    throw new ApiError(401,"notification is already Expired")
+   }
+
+    // Check the BookingStatus of each notification's bookingId
+    if (booking?.BookingStatus === "Confirm") {
+      throw new ApiError(401, "Booking is already accepted");
+    }
+
+    console.log("---------bookings----------");
+
+    
+  }
+
+
   res.status(200).json({
     success: true,
     data: cleaner,

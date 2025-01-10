@@ -23,8 +23,18 @@
 
 import { socketIdMap } from "./socketHandler.js";
 import { getSocketIO } from "./socketConfig.js";
+import { BookingService } from "../models/Client/booking.model.js";
 
-const sendNotification = (cleaners, notificationData) => {
+
+const sendNotification = async (cleaners, notificationData) => {
+  const booking = await BookingService.findById(notificationData.id);
+   
+
+  if (booking?.BookingStatus === "confirm") {
+    console.log("Booking already accepted. Notifications skipped.");
+    return;
+  }
+
   console.log(
     "................................sendNotification is called....................."
   );
