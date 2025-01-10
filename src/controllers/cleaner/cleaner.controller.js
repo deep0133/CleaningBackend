@@ -3,7 +3,8 @@ import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import { NotificationModel } from "../../models/Notification/notificationSchema.js";
 import ReviewModel from "../../models/Review/review.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
-import { BookingService } from "../../models/Client/booking.model.js";
+import { BookingService } from "../../models/Client/booking.model.js";import {ApiError} from '../../utils/apiError.js'
+
 // get profile:
 const getProfile = asyncHandler(async (req, res) => {
   const userDetail = req.cleaner_data_in_user;
@@ -101,36 +102,45 @@ const getCleanerNotification = asyncHandler(async (req, res) => {
   const cleaner = await NotificationModel.find({
     cleanerId: req.user._id,
   }).populate({
-    path: "bookingId",
-    select: "_id PaymentId", // Include bookingId and PaymentId in the response
-    populate: {
-      path: "PaymentId",
-      select: "PaymentValue", // Fields to include from PaymentId
-    },
+    path: "bookingId", 
+    select: "BookingStatus", 
   });
-  // const data = cleaner.map((notification) => {
-  //   const { bookingId, ...rest } = notification.toObject();
-  //   const { PaymentId, PaymentValue, ...restPayment } = bookingId.PaymentId;
-  //   return {
-  //     ...rest,
-  //     bookingId: {
-  //       bookingId,
-  //       PaymentId: {
-  //         PaymentId,
-  //         PaymentValue,
-  //       },
-  //     },
-  //   };
-  // });
+  console.log("-----------------------cleaners----------------")
+  console.log(cleaner)
 
-  console.log("-----------cleaner---------Notificaitons-------------", cleaner);
-
-  if (!cleaner || cleaner.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: "No notifications found for the cleaner.",
-    });
+  
+  if (!cleaner) {
+    return res
+      .status(200)
+      .json({ success: true, message: "No Notification Found" });
   }
+
+
+
+  console.log("-----------------------booking--------------");
+  const currentTime =  Date.now()
+  for (let notification of cleaner) {
+    if(notification.isExpire){
+      throw new ApiError(401,"notification is already expired")
+    }
+
+    const booking = notification.bookingId;
+       console.log("--------bookingStatus----------",booking.BookingStatus);
+
+   if(notification.timestamp.start < currentTime ){
+    throw new ApiError(401,"notification is already Expired")
+   }
+
+    // Check the BookingStatus of each notification's bookingId
+    if (booking?.BookingStatus === "Confirm") {
+      throw new ApiError(401, "Booking is already accepted");
+    }
+
+    console.log("---------bookings----------");
+
+    
+  }
+
 
   res.status(200).json({
     success: true,

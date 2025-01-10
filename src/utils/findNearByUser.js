@@ -1,4 +1,5 @@
 import { User } from "../models/user.model.js";
+import { Cleaner } from "../models/Cleaner/cleaner.model.js";
 import sendNotification from "../socket/sendNotification.js";
 import { BookingService } from "../models/Client/booking.model.js";
 import { NotificationModel } from "../models/Notification/notificationSchema.js";
@@ -9,6 +10,7 @@ export const findNearbyCleanersController = async (
   latitude,
   bookingId
 ) => {
+
   // Validate input
   if (!longitude || !latitude) {
     console.log("Longitude and latitude are required");
@@ -23,8 +25,18 @@ export const findNearbyCleanersController = async (
     return false;
   }
 
+  const bookingDetail = await BookingService.findById(bookingId)
+  .populate({
+    path: 'CartData.categoryId',
+    select: 'name'
+  });
+
+
+  const category = bookingDetail.CartData[0].categoryId.name;
+
+
   // Verify geospatial index
-  const indexes = await User.collection.indexes();
+     const indexes = await User.collection.indexes();
   const geoIndex = indexes.find((index) => index.key.location === "2dsphere");
 
   if (!geoIndex) {
@@ -35,6 +47,8 @@ export const findNearbyCleanersController = async (
   const maxRadius = 1000; // 10km in meters
 
   // Find nearby cleaners using $geoNear
+
+
   const nearbyCleaners = await User.aggregate([
     {
       $geoNear: {
@@ -42,18 +56,40 @@ export const findNearbyCleanersController = async (
           type: "Point",
           coordinates: [longitude, latitude],
         },
-        distanceField: "distance",
-        maxDistance: parseFloat(maxRadius),
-        spherical: true,
-        query: {
-          role: "cleaner",
+        distanceField: "distance",  // This will return the distance of each result from the point
+        maxDistance: parseFloat(maxRadius),  // Specify the max distance here
+        spherical: true,  // Set to true for GeoJSON data
+        query: { 
+          role: "cleaner",  // Filter by role (cleaner)
         },
       },
     },
     {
-      $project: { _id: 1 },
+      $match: {
+        "cleanerDetails.category": {  // Ensure category filter is applied correctly
+          $in: [category],  // Filter by the provided category
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: "cleaners",  // Ensure this matches the name of the collection storing cleaner details
+        localField: "_id",  // Match User's _id to Cleaner references
+        foreignField: "user",  // Assume Cleaner has a 'user' field referencing User _id
+        as: "cleanerDetails",  // Name of the array in the result
+      },
+    },
+    {
+      $unwind: "$cleanerDetails",  // Unwind the cleanerDetails array
+    },
+    {
+      $project: {
+        _id: 1,  // Project the fields you need
+      
+      },
     },
   ]);
+  
 
   console.log(
     "Searching nearby cleaners data length....................",
@@ -65,10 +101,6 @@ export const findNearbyCleanersController = async (
     return false;
   }
 
-  const bookingDetail = await BookingService.findById(bookingId)
-    .populate("User")
-    .populate("PaymentId");
-
   const notificationExists = await NotificationModel.findOne({
     bookingId: bookingId,
   });
@@ -76,7 +108,6 @@ export const findNearbyCleanersController = async (
   if (notificationExists) {
     console.log("Notification already sent to nearby cleaners");
     return false;
-    // throw new ApiError(400, "Notification already sent to nearby cleaners");
   }
 
   const notificationData = {

@@ -23,8 +23,12 @@
 
 import { socketIdMap } from "./socketHandler.js";
 import { getSocketIO } from "./socketConfig.js";
+import { BookingService } from "../models/Client/booking.model.js";
 
-const sendNotification = (cleaners, notificationData) => {
+
+const sendNotification = async (cleaners, notificationData) => {
+
+
   console.log(
     "................................sendNotification is called....................."
   );

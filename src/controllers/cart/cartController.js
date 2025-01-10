@@ -8,8 +8,6 @@ import { calculateHours } from "../../utils/calculateHours.js";
 export const getAllCartItems = asyncHandler(async (req, res) => {
   let cartItems = await Cart.findOne({ User: req.user._id });
 
-  console.log("-------get all carts-------:");
-
   if (!cartItems) {
     return res.status(200).json({
       success: true,
@@ -151,14 +149,6 @@ export const addToCart = asyncHandler(async (req, res) => {
 
     // const updatedCart = await existingCart.save();
 
-    console.log("----existing cart -----------:");
-    console.log("----existing cart -----------:");
-    console.log("----existing cart -----------:");
-    console.log("----existing cart -----------:", existingCart);
-    console.log("----existing cart -----------:");
-    console.log("----existing cart -----------:");
-    console.log("----existing cart -----------:");
-    console.log("----existing cart -----------:");
     if (existingCart?.cart?.length > 0) {
       console.log("----cart found-------------");
       res.status(201).json({
