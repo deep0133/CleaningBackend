@@ -7,7 +7,7 @@ const validateTimeSlot = (cleanerBookings, bookingTimeSlot) => {
     const cleanerBooking = cleanerBookings[i];
 
     const oneHourBeforeTime = new Date(
-      3600000 - new Date(bookingTimeSlot.start)
+      3600000 - new Date(bookingTimeSlot.start)     
     );
     const oneHourAfterTime = new Date(3600000 + new Date(bookingTimeSlot.end));
 

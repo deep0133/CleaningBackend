@@ -89,16 +89,7 @@ const getCleanerNotification = asyncHandler(async (req, res) => {
   console.log(
     "------------------------------------------------------------------------------------------"
   );
-  // const cleaner = await NotificationModel.find({
-  //   cleanerId: req.user._id,
-  // }).populate({
-  //   path: "bookingId",
-  //   select: "PaymentId",
-  //   populate: {
-  //     path: "PaymentId",
-  //     select: "_id PaymentValue PaymentStatus",
-  //   },
-  // });
+
   const cleaner = await NotificationModel.find({
     cleanerId: req.user._id,
   }).populate({
@@ -118,33 +109,34 @@ const getCleanerNotification = asyncHandler(async (req, res) => {
 
 
   console.log("-----------------------booking--------------");
+  const validNotification = [];
   const currentTime =  Date.now()
   for (let notification of cleaner) {
     if(notification.isExpire){
-      throw new ApiError(401,"notification is already expired")
+      continue;
     }
 
     const booking = notification.bookingId;
        console.log("--------bookingStatus----------",booking.BookingStatus);
 
    if(notification.timestamp.start < currentTime ){
-    throw new ApiError(401,"notification is already Expired")
+    continue;
    }
 
     // Check the BookingStatus of each notification's bookingId
     if (booking?.BookingStatus === "Confirm") {
-      throw new ApiError(401, "Booking is already accepted");
+      continue;
     }
 
     console.log("---------bookings----------");
-
+    validNotification.push(notification)
     
   }
 
-
+   
   res.status(200).json({
     success: true,
-    data: cleaner,
+    data: validNotification,
   });
 });
 

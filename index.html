@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stripe Payment Test</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      #card-element {
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+      }
+      button {
+        background-color: #6772e5;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Stripe Payment Test</h1>
+    <div id="payment-form" style="border: 4px solid black">
+      <label for="card-element">Card Details:</label>
+      <div id="card-element"></div>
+      <button id="pay-button">Pay Now</button>
+    </div>
+    <div
+      id="payment-result"
+      style="margin-top: 20px; color: green; font-weight: bold"
+    ></div>
+
+    <script>
+      // Replace with your actual Stripe public key
+      const stripe = Stripe(
+        "pk_test_51Mi80fCEoWIuFDI917bgxQnMkjVpUCSBWbKm3Xe8YZFE3eDq4e8O8cMVKkc2DVz6yQRh0Jo15CMOFKb9CzQdMx2M00rgdGCUp6"
+      );
+
+      // Initialize Stripe Elements
+      const elements = stripe.elements();
+      const cardElement = elements.create("card");
+      cardElement.mount("#card-element");
+
+      // Button Handler
+      document
+        .getElementById("pay-button")
+        .addEventListener("click", async () => {
+          const payButton = document.getElementById("pay-button");
+          const paymentResult = document.getElementById("payment-result");
+          payButton.disabled = true;
+          paymentResult.textContent = "Processing payment...";
+
+          try {
+            // Call your backend to create a PaymentIntent
+            // const response = await fetch(
+            //   "http://localhost:8000/api/payments/createOrder",
+            //   {
+            //     method: "POST",
+            //     headers: { "Content-Type": "application/json" },
+            //     body: JSON.stringify({
+            //       amount: 5000, // Amount in smallest currency unit (e.g., paise for INR)
+            //       currency: "INR",
+            //       metadata: { orderId: "test-order-123" },
+            //     }),
+            //   }
+            // );
+
+            // const data = await response.json();
+            // if (!data.clientSecret) {
+            //   throw new Error("Failed to get clientSecret from backend.");
+            // }
+
+            const input = prompt("Enter the Client Secret key");
+            const clientSecret =
+              input ||
+              "pi_3Qb1IDCEoWIuFDI91ZKlfNod_secret_dYXyPhaBuDVjW3PB1XcspKnpQ";
+
+            console.log("------input------->", input);
+            // Confirm the payment with Stripe
+            const { error, paymentIntent } = await stripe.confirmCardPayment(
+              clientSecret,
+              {
+                payment_method: { card: cardElement },
+              }
+            );
+
+            if (error) {
+              throw error;
+            }
+
+            if (paymentIntent.status === "succeeded") {
+              paymentResult.textContent = "Payment Successful!";
+            } else {
+              paymentResult.textContent = `Payment failed with status:", ${paymentIntent.status}`;
+            }
+          } catch (err) {
+            console.error(err);
+            paymentResult.textContent =`Payment failed: ${err.message}`;
+          } finally {
+            payButton.disabled = false;
+          }
+        });
+    </script>
+  </body>
+</html>

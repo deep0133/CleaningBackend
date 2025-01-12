@@ -19,7 +19,7 @@ const cleaner = new Schema(
     ],
     availability: {
       type: Boolean,
-      default: true, // Indicates if the cleaner is currently available for bookings
+      default: true,
     },
     currentBooking: {
       type: mongoose.Schema.Types.ObjectId,

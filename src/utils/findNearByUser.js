@@ -4,6 +4,7 @@ import sendNotification from "../socket/sendNotification.js";
 import { BookingService } from "../models/Client/booking.model.js";
 import { NotificationModel } from "../models/Notification/notificationSchema.js";
 import { socketIdMap } from "../socket/socketHandler.js";
+import mongoose from "mongoose";
 
 // const findNearbyCleaners = async (longitude, latitude) => {
 //   try {
@@ -180,7 +181,8 @@ export const findNearbyCleanersController = async (longitude,
   });
 
 
-  const category = bookingDetail.CartData[0].categoryId.name;
+  const category =  mongoose.Types.ObjectId(bookingDetail.CartData[0].categoryId._id);
+  console.log("---------category-------------",category)  ;
 
 
 // console.log("-----------------bookingDetail...............");
@@ -236,7 +238,7 @@ export const findNearbyCleanersController = async (longitude,
     {
       $project: {
         _id: 1,  // Project the fields you need
-      
+        "cleanerDetails.name": 1,
       },
     },
   ]);

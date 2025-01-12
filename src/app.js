@@ -63,7 +63,7 @@ app.use("/api/v1/admin/cleaner", adminCleanerRouter);
 // Stripe webhooks (must come after other routes, but before body parsing)
 app.post("/webhook/paymentStatus", verifyStripePayment);
 app.post("/webhook/balance", balanceWebhook);
-// app.post("/api/v1/findNearbyCleaners", findNearbyCleanersController);
+
 
 // Default route for unhandled paths
 app.all("*", (req, res) => {
