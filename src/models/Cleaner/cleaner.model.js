@@ -13,7 +13,8 @@ const cleaner = new Schema(
     // serviceType
     category: [
       {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Services",
         required: true,
       },
     ],

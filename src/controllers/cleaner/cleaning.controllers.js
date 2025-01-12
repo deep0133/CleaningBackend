@@ -41,8 +41,6 @@ const createCleaningService = async (req, res) => {
     const { name, description } = req.body;
     let addOns = req.body.addOns;
 
-    console.log("Received addOns:", addOns);
-
     // Handle the addOns array
     let addOnsArray = [];
     if (addOns) {

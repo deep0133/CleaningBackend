@@ -5,7 +5,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { Cart } from "../../models/Client/cart.model.js";
 import { PaymentModel } from "../../models/Client/paymentModel.js";
 import validateTimeSlot from "../../utils/validateTimeSlot.js";
-import {NotificationModel} from '../../models/Notification/notificationSchema.js'
+import { NotificationModel } from "../../models/Notification/notificationSchema.js";
 import adminWallet from "../../models/adminWallet/adminWallet.model.js";
 import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 
@@ -63,7 +63,6 @@ export const createBooking = asyncHandler(async (req, res) => {
   session.startTransaction();
 
   let adminWalletData = (await adminWallet.findOne({})) || {};
-  console.log("---------admin Wallet --------:", adminWalletData);
 
   if (!adminWalletData) {
     console.log(
