@@ -156,8 +156,8 @@ import mongoose from "mongoose";
 
 export const findNearbyCleanersController = async (longitude,
   latitude,
-  bookingId) => {
-
+  bookingId
+) => {
   // Validate input
   if (!longitude || !latitude) {
     console.log("Longitude and latitude are required");
@@ -172,28 +172,20 @@ export const findNearbyCleanersController = async (longitude,
     return false;
   }
 
-  console.log("booking Id...");
-
-  const bookingDetail = await BookingService.findById(bookingId)
-  .populate({
-    path: 'CartData.categoryId',
-    select: 'name'
+  const bookingDetail = await BookingService.findById(bookingId).populate({
+    path: "CartData.categoryId",
+    select: "name",
   });
-
 
   const category =  mongoose.Types.ObjectId(bookingDetail.CartData[0].categoryId._id);
   console.log("---------category-------------",category)  ;
 
-
-// console.log("-----------------bookingDetail...............");
   // Verify geospatial index
-     const indexes = await User.collection.indexes();
+  const indexes = await User.collection.indexes();
   const geoIndex = indexes.find((index) => index.key.location === "2dsphere");
 
   if (!geoIndex) {
-    console.log("Geospatial index is missing. Creating index...");
     await User.collection.createIndex({ location: "2dsphere" });
-    console.log("Geospatial index created successfully.");
   } else {
     console.log("Geospatial index exists.");
   }
@@ -201,6 +193,16 @@ export const findNearbyCleanersController = async (longitude,
 
   // Find nearby cleaners using $geoNear
 
+  console.log(
+    "---------------------------------------------------------------------------------------"
+  );
+  console.log(
+    "------------------------------------------category---------------------------------------------",
+    category
+  );
+  console.log(
+    "---------------------------------------------------------------------------------------"
+  );
 
   const nearbyCleaners = await User.aggregate([
     {
@@ -209,31 +211,32 @@ export const findNearbyCleanersController = async (longitude,
           type: "Point",
           coordinates: [longitude, latitude],
         },
-        distanceField: "distance",  // This will return the distance of each result from the point
-        maxDistance: parseFloat(maxRadius),  // Specify the max distance here
-        spherical: true,  // Set to true for GeoJSON data
-        query: { 
-          role: "cleaner",  // Filter by role (cleaner)
+        distanceField: "distance", // This will return the distance of each result from the point
+        maxDistance: parseFloat(maxRadius), // Specify the max distance here
+        spherical: true, // Set to true for GeoJSON data
+        query: {
+          role: "cleaner", // Filter by role (cleaner)
         },
       },
     },
     {
       $match: {
-        "cleanerDetails.category": {  // Ensure category filter is applied correctly
-          $in: [category],  // Filter by the provided category
+        "cleanerDetails.category": {
+          // Ensure category filter is applied correctly
+          $in: [category], // Filter by the provided category
         },
       },
     },
     {
       $lookup: {
-        from: "cleaners",  // Ensure this matches the name of the collection storing cleaner details
-        localField: "_id",  // Match User's _id to Cleaner references
-        foreignField: "user",  // Assume Cleaner has a 'user' field referencing User _id
-        as: "cleanerDetails",  // Name of the array in the result
+        from: "cleaners", // Ensure this matches the name of the collection storing cleaner details
+        localField: "_id", // Match User's _id to Cleaner references
+        foreignField: "user", // Assume Cleaner has a 'user' field referencing User _id
+        as: "cleanerDetails", // Name of the array in the result
       },
     },
     {
-      $unwind: "$cleanerDetails",  // Unwind the cleanerDetails array
+      $unwind: "$cleanerDetails", // Unwind the cleanerDetails array
     },
     {
       $project: {
@@ -242,29 +245,16 @@ export const findNearbyCleanersController = async (longitude,
       },
     },
   ]);
-  
-
-    console.log("---------------------nearByCleaners-----------------");
-    console.log(nearbyCleaners)
-
-  // const searching = await getNearbyCleaners(
-  //   longitude,
-  //   latitude,
-  //   maxRadius,
-  //   requestedCategory // single string value
-  // );
 
   console.log(
-    "Searching nearby cleaners data....................",
-    nearbyCleaners
+    "Searching nearby cleaners data length....................",
+    nearbyCleaners?.length
   );
 
   if (!nearbyCleaners) {
     console.log("-----------------No nearby cleaners found-----------------");
     return false;
   }
-
-
 
   const notificationExists = await NotificationModel.findOne({
     bookingId: bookingId,
@@ -273,7 +263,6 @@ export const findNearbyCleanersController = async (longitude,
   if (notificationExists) {
     console.log("Notification already sent to nearby cleaners");
     return false;
-    // throw new ApiError(400, "Notification already sent to nearby cleaners");
   }
 
   const notificationData = {
@@ -290,11 +279,8 @@ export const findNearbyCleanersController = async (longitude,
   const connectedCleanersIds = Object.values(socketIdMap); // Get all values
   const connectedCleanersKeys = Object.keys(socketIdMap);
 
-  console.log("------socketIdMap--------------: ", socketIdMap);
-  console.log(
-    "...................socketIds................",
-    connectedCleanersIds
-  );
+  console.log("................socketIdMap............", socketIdMap);
+  console.log("--------------connectedCleanersKeys---:", connectedCleanersKeys);
 
   if (connectedCleanersKeys.length > 0) {
     sendNotification(nearbyCleaners, notificationData);
@@ -305,26 +291,12 @@ export const findNearbyCleanersController = async (longitude,
     cleanerId,
     name: bookingDetail?.User?.name,
     address: bookingDetail.CartData[0].UserAddress,
-    bookingId,
+    bookingId: bookingId,
     message: "New cleaning request", // Mark as read if the cleaner is connected
     timestamp: bookingDetail.CartData[0].TimeSlot,
     isExpire: false,
   }));
 
   await NotificationModel.insertMany(notifications);
-
-  console.log(
-    "Notifications sent to nearby cleaners ------ length of nearby cleaner----:",
-    nearbyCleaners.length
-  );
   return true;
 };
-
-/**
- *   { _id: new ObjectId('677285beabce87038b668e4e') },
-  { _id: new ObjectId('677285beabce87038b668e4a') },
-  { _id: new ObjectId('677285beabce87038b668e52') },
-  { _id: new ObjectId('677285beabce87038b668e4b') },
-  { _id: new ObjectId('677285beabce87038b668e50') },
-  { _id: new ObjectId('677285beabce87038b668e4d') }
- */

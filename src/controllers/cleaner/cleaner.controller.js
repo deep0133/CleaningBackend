@@ -3,7 +3,8 @@ import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import { NotificationModel } from "../../models/Notification/notificationSchema.js";
 import ReviewModel from "../../models/Review/review.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
-import { BookingService } from "../../models/Client/booking.model.js";import {ApiError} from '../../utils/apiError.js'
+import { BookingService } from "../../models/Client/booking.model.js";
+import { ApiError } from "../../utils/apiError.js";
 
 // get profile:
 const getProfile = asyncHandler(async (req, res) => {
@@ -93,50 +94,50 @@ const getCleanerNotification = asyncHandler(async (req, res) => {
   const cleaner = await NotificationModel.find({
     cleanerId: req.user._id,
   }).populate({
-    path: "bookingId", 
-    select: "BookingStatus", 
+    path: "bookingId",
+    select: "BookingStatus",
   });
-  console.log("-----------------------cleaners----------------")
-  console.log(cleaner)
 
-  
+  console.log(
+    "-----------------------total notificaitons ----------------",
+    cleaner?.length
+  );
+
   if (!cleaner) {
     return res
       .status(200)
       .json({ success: true, message: "No Notification Found" });
   }
 
-
-
-  console.log("-----------------------booking--------------");
-  const validNotification = [];
-  const currentTime =  Date.now()
+  const newNoti = [];
+  const currentTime = Date.now();
   for (let notification of cleaner) {
-    if(notification.isExpire){
+    if (notification.isExpire) {
       continue;
     }
 
     const booking = notification.bookingId;
-       console.log("--------bookingStatus----------",booking.BookingStatus);
+    console.log("--------bookingStatus----------", booking.BookingStatus);
 
-   if(notification.timestamp.start < currentTime ){
-    continue;
-   }
-
-    // Check the BookingStatus of each notification's bookingId
-    if (booking?.BookingStatus === "Confirm") {
+    if (notification.timestamp.start < currentTime) {
       continue;
     }
 
+    // Check the BookingStatus of each notification's bookingId
+    if (booking?.BookingStatus === "Confirm") {
+      // throw new ApiError(401, "Booking is already accepted");
+      continue;
+    }
+
+    newNoti.push(notification);
     console.log("---------bookings----------");
-    validNotification.push(notification)
-    
   }
 
-   
+  console.log("-------------newNoti----------------:", newNoti?.length);
+
   res.status(200).json({
     success: true,
-    data: validNotification,
+    data: newNoti,
   });
 });
 

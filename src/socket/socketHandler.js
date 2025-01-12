@@ -13,7 +13,7 @@ const handleSocketConnection = (io) => {
       ip: socket.handshake.address,
       userAgent: socket.handshake.headers["user-agent"],
     };
-    console.count("a user connected............with socketId : ", data);
+    console.log("a user connected............with socket data : ", data);
     socket.onAny((event) => {
       console.log(`Event received: ${event}`);
     });
