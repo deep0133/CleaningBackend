@@ -41,6 +41,7 @@ const userSchema = new Schema(
         trim: true,
       },
     ],
+    profilePhoto: String,
     location: {
       type: {
         type: String,

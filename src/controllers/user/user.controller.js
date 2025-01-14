@@ -8,6 +8,7 @@ import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import AccountDetail from "../../models/accountDetail/accountDetail.model.js";
+import { v2 as cloudinary } from "cloudinary";
 
 const verfiyOtpAndRegister = asyncHandler(async (req, res) => {
   const {
@@ -265,6 +266,7 @@ const allUsers = asyncHandler(async (req, res) => {
 });
 
 const updateProfile = asyncHandler(async (req, res) => {
+  // -----Pending--- : Remove phone number -- it is not verified
   const { name, email, phoneNumber, address } = req.body;
 
   const user = await User.findById(req.user._id);
@@ -381,36 +383,33 @@ const getAllContact = asyncHandler(async (req, res) => {
 
 // Enter Phone Number To Recieve OTP for reset password
 const forgotPassword = asyncHandler(async (req, res) => {
-  const { newPassword,phoneNumber } = req.body;
-  // const resetToken =  req.headers['authorization']?.split(' ')[1]; 
+  const { newPassword, phoneNumber } = req.body;
+  // const resetToken =  req.headers['authorization']?.split(' ')[1];
 
   // console.log("----------------resetToken------------");
   //   console.log(resetToken);
   // if(!resetToken){
   //   throw new ApiError(404,"Token is missing")
   // }
-  
 
   if (!newPassword) {
     throw new ApiError(400, "newPassword is missing");
   }
 
+  // const decodedToken = jwt.verify(resetToken, process.env.RESET_TOKEN_SECERET);
+  // if(!decodedToken){
+  //   throw new ApiError(400,"Invalid or expired Token")
+  // }
 
-    // const decodedToken = jwt.verify(resetToken, process.env.RESET_TOKEN_SECERET); 
-    // if(!decodedToken){
-    //   throw new ApiError(400,"Invalid or expired Token")
-    // }
+  // console.log("--------------decodedToken---------------");
+  // console.log(decodedToken);
 
-    // console.log("--------------decodedToken---------------");
-    // console.log(decodedToken);
-
-    // const {phoneNumber} = decodedToken;
-    // console.log("----------------------- Decoded----PhoneNumber-------")
-    // console.log(phoneNumber);
-
+  // const {phoneNumber} = decodedToken;
+  // console.log("----------------------- Decoded----PhoneNumber-------")
+  // console.log(phoneNumber);
 
   const user = await User.findOne({ phoneNumber });
-  
+
   if (!user) {
     throw new ApiError(400, "user with this number does not exists");
   }
@@ -670,4 +669,84 @@ export const createdByAdmin = asyncHandler(async (req, res) => {
     // End the session in either case (commit or abort)
     session.endSession();
   }
+});
+
+const updateProfilePhoto = asyncHandler(async (req, res) => {
+  // Find the user by their ID
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    return res.status(404).json({ success: false, message: "User not found" });
+  }
+
+  if (!address && !addressId) {
+    return res.status(400).json({
+      success: false,
+      message: "Provide either a new address or an addressId to update",
+    });
+  }
+
+  // Update address if `addressId` is provided
+  if (addressId) {
+    const addressIndex = user.address.findIndex(
+      (addr) => addr._id.toString() === addressId
+    );
+
+    if (addressIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: "Address with the given ID not found",
+      });
+    }
+
+    // Update the existing address
+    user.address[addressIndex] = address;
+  } else if (address) {
+    // Push a new address if `addressId` is not provided
+    user.address.push(address);
+  }
+
+  // Save the updated user
+  await user.save();
+
+  res
+    .status(200)
+    .json({ success: true, message: "Address updated successfully" });
+});
+
+// multerUpload.single("profilePhoto")
+export const updatePhoto = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  if (!userId) {
+    return res.status(400).json({ error: "User ID is required" });
+  }
+
+  // Check if a file was uploaded
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+
+  // Get the Cloudinary URL from multer
+  const profilePhotoUrl = req.file.path;
+
+  // Find the user in the database
+  const user = await User.findById(userId);
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  // Check if the user already has a profile photo and delete it from Cloudinary
+  if (user.profilePhoto) {
+    const publicId = user.profilePhoto.split("/").pop().split(".")[0]; // Extract public ID from the URL
+    await cloudinary.uploader.destroy(`uploads/${publicId}`);
+  }
+
+  user.profilePhoto = profilePhotoUrl;
+
+  await user.save();
+
+  res.status(200).json({
+    message: "Profile photo updated successfully",
+    data: user,
+  });
 });
