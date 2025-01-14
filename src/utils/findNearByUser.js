@@ -163,22 +163,23 @@ export const findNearbyCleanersController = async (longitude,
     console.log("Longitude and latitude are required");
     return false;
   }
+    
 
-  console.log("-------in findnear by cleaner----");
+   console.log("-------in findnear by cleaner----");
 
   if (!bookingId) {
     // throw new ApiError(400, "Booking Id is required");
     console.log("Booking Id is required");
     return false;
   }
-
+  console.log("-------------bookingId at findNearByCleaner------------",bookingId);
   const bookingDetail = await BookingService.findById(bookingId).populate({
     path: "CartData.categoryId",
     select: "name",
   });
 
-  const category =  mongoose.Types.ObjectId(bookingDetail.CartData[0].categoryId._id);
-  console.log("---------category-------------",category)  ;
+  const category =  bookingDetail.CartData[0].categoryId._id;
+  
 
   // Verify geospatial index
   const indexes = await User.collection.indexes();
@@ -204,6 +205,8 @@ export const findNearbyCleanersController = async (longitude,
     "---------------------------------------------------------------------------------------"
   );
 
+ 
+
   const nearbyCleaners = await User.aggregate([
     {
       $geoNear: {
@@ -220,18 +223,10 @@ export const findNearbyCleanersController = async (longitude,
       },
     },
     {
-      $match: {
-        "cleanerDetails.category": {
-          // Ensure category filter is applied correctly
-          $in: [category], // Filter by the provided category
-        },
-      },
-    },
-    {
       $lookup: {
-        from: "cleaners", // Ensure this matches the name of the collection storing cleaner details
-        localField: "_id", // Match User's _id to Cleaner references
-        foreignField: "user", // Assume Cleaner has a 'user' field referencing User _id
+        from: "cleaners",     // Ensure  this matches the name of the collection storing cleaner details
+        localField: "_id",    // Match   User's _id to Cleaner references
+        foreignField: "user", // Assume  Cleaner has a 'user' field referencing User _id
         as: "cleanerDetails", // Name of the array in the result
       },
     },
@@ -239,18 +234,27 @@ export const findNearbyCleanersController = async (longitude,
       $unwind: "$cleanerDetails", // Unwind the cleanerDetails array
     },
     {
+      $match: {
+        "cleanerDetails.category": {
+          $in: [category], // Filter by the provided category
+        },
+      },
+    },
+    {
       $project: {
-        _id: 1,  // Project the fields you need
+        _id: 1, // Project the fields you need
         "cleanerDetails.name": 1,
+        "cleanerDetails.category": 1,
+        distance: 1,
       },
     },
   ]);
-
+  
   console.log(
     "Searching nearby cleaners data length....................",
     nearbyCleaners?.length
   );
-
+  
   if (!nearbyCleaners) {
     console.log("-----------------No nearby cleaners found-----------------");
     return false;
@@ -259,14 +263,17 @@ export const findNearbyCleanersController = async (longitude,
   const notificationExists = await NotificationModel.findOne({
     bookingId: bookingId,
   });
+  console.log("------------notification exists-----------",notificationExists);
 
   if (notificationExists) {
     console.log("Notification already sent to nearby cleaners");
     return false;
   }
 
+  console.log("-------------bookingId--at-findNearByCleaner----------",bookingId);
+
   const notificationData = {
-    id: bookingId,
+    bookingId: bookingId,
     name: bookingDetail?.User?.name,
     jobType: bookingDetail.CartData[0].categoryId,
     location: bookingDetail.CartData[0].UserAddress,
@@ -279,13 +286,16 @@ export const findNearbyCleanersController = async (longitude,
   const connectedCleanersIds = Object.values(socketIdMap); // Get all values
   const connectedCleanersKeys = Object.keys(socketIdMap);
 
-  console.log("................socketIdMap............", socketIdMap);
-  console.log("--------------connectedCleanersKeys---:", connectedCleanersKeys);
+  console.log("................socketIdMap...............................",socketIdMap);
+  console.log("--------------connectedCleanersKeys----------------------:",connectedCleanersKeys);
+  console.log(".....................notificationData.....................",notificationData);
 
   if (connectedCleanersKeys.length > 0) {
     sendNotification(nearbyCleaners, notificationData);
   }
   const cleanerIds = nearbyCleaners.map((cleaner) => cleaner._id.toString());
+
+    
 
   const notifications = cleanerIds.map((cleanerId) => ({
     cleanerId,
@@ -296,7 +306,7 @@ export const findNearbyCleanersController = async (longitude,
     timestamp: bookingDetail.CartData[0].TimeSlot,
     isExpire: false,
   }));
-
+console.log("-------------------notifications at findNearBycleaners-------------------",notifications);
   await NotificationModel.insertMany(notifications);
   return true;
 };

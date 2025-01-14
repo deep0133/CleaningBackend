@@ -15,6 +15,7 @@ import cleanerRouter from "./routes/cleaner.routes.js";
 import adminAuth from "./routes/adminRoutes.js";
 import morgan from "morgan";
 import disputeRouter from "./routes/dispute.routes.js";
+import { Cleaner } from "./models/Cleaner/cleaner.model.js";
 
 const app = express();
 
@@ -63,6 +64,7 @@ app.use("/api/v1/admin/cleaner", adminCleanerRouter);
 // Stripe webhooks (must come after other routes, but before body parsing)
 app.post("/webhook/paymentStatus", verifyStripePayment);
 app.post("/webhook/balance", balanceWebhook);
+
 
 
 // Default route for unhandled paths

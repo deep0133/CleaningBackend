@@ -191,7 +191,7 @@ export const addToCart = asyncHandler(async (req, res) => {
 
     await newCart.save();
 
-    console.log("----cart added -------------", newCart);
+    // console.log("----cart added -------------", newCart);
     res.status(201).json({
       success: true,
       message: "Item added to cart successfully",

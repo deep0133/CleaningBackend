@@ -1,34 +1,45 @@
 const validateTimeSlot = (cleanerBookings, bookingTimeSlot) => {
-  console.log(
-    "---------bookingTimeSlot - start ----------",
-    bookingTimeSlot?.start
-  );
-  console.log(
-    "---------bookingTimeSlot - end ----------",
-    bookingTimeSlot?.end
-  );
+
+   console.log("--------------this is validateTimeSlot----functions-------------")
+
   if (cleanerBookings?.length === 0) return true;
+
 
   for (let i = 0; i < cleanerBookings.length; i++) {
     const cleanerBooking = cleanerBookings[i];
+    // console.log("----------cleanerBooking one by one----------",cleanerBooking)
+    
 
     // Calculate one hour before and after
     const oneHourBeforeTime = new Date(
-      new Date(bookingTimeSlot.start).getTime() - 3600000
+      new Date(bookingTimeSlot.start).getTime() - 60*60*1000
     );
 
+
+
     const oneHourAfterTime = new Date(
-      new Date(bookingTimeSlot.end).getTime() + 3600000
-    );
+      new Date(bookingTimeSlot.end).getTime() + 60*60*1000
+    );   
+   
+    const endTime  = new Date(cleanerBooking.CartData[0].TimeSlot.end);
+    const startTime = new Date(cleanerBooking.CartData[0].TimeSlot.start);
+
+   
+ 
+
     if (
-      new Date(cleanerBooking.TimeSlot.end) < new Date(oneHourBeforeTime) &&
-      new Date(cleanerBooking.TimeSlot.start) > oneHourAfterTime
+      !(
+        endTime <= oneHourBeforeTime || startTime >= oneHourAfterTime)
     ) {
-      return true;
+      console.log(
+        "Booking cannot be accepted due to overlap with:",
+        cleanerBooking
+      );
+      return false;
     }
   }
 
-  return false;
+  return true;
 };
 
 export default validateTimeSlot;

@@ -112,7 +112,7 @@ async function handleEvent(eventType, paymentIntent) {
     "payment_intent.processing": { PaymentStatus: "processing" },
     "payment_intent.succeeded": { PaymentStatus: "paid" },
   };
-
+    console.log('---------------bookingId at handleEvent-------------',bookingId);
   if (statusUpdates[eventType]) {
     await updateBookingStatus(bookingId, statusUpdates[eventType]);
   } else {

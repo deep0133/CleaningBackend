@@ -90,6 +90,9 @@ const getCleanerNotification = asyncHandler(async (req, res) => {
   console.log(
     "------------------------------------------------------------------------------------------"
   );
+   console.log(req.user._id);
+  const notification = await NotificationModel.find({cleanerId:req.user_id});
+  console.log('----------notification---------------',notification);
 
   const cleaner = await NotificationModel.find({
     cleanerId: req.user._id,
@@ -102,7 +105,7 @@ const getCleanerNotification = asyncHandler(async (req, res) => {
     "-----------------------total notificaitons ----------------",
     cleaner?.length
   );
-
+   console.log("-----------------cleaner------------",cleaner)
   if (!cleaner) {
     return res
       .status(200)
@@ -116,15 +119,17 @@ const getCleanerNotification = asyncHandler(async (req, res) => {
       continue;
     }
 
-    const booking = notification.bookingId;
-    console.log("--------bookingStatus----------", booking.BookingStatus);
+    // const booking = notification.bookingId;
+    const booking  = notification;
+    console.log("==========booking--==========",booking);
+    console.log("--------bookingStatus----------", booking.bookingId?.BookingStatus);
 
     if (notification.timestamp.start < currentTime) {
       continue;
     }
 
-    // Check the BookingStatus of each notification's bookingId
-    if (booking?.BookingStatus === "Confirm") {
+    // Check the BookingStatus of each notification's bookingIdvz
+    if (booking.bookingId?.BookingStatus === "Confirm") {
       // throw new ApiError(401, "Booking is already accepted");
       continue;
     }

@@ -1,4 +1,6 @@
+import { parse } from "dotenv";
 import { User } from "../models/user.model.js";
+import { json } from "express";
 
 const socketIdMap = {};
 
@@ -13,7 +15,7 @@ const handleSocketConnection = (io) => {
       ip: socket.handshake.address,
       userAgent: socket.handshake.headers["user-agent"],
     };
-    console.log("a user connected............with socket data : ", data);
+    // console.log("a user connected............with socket data : ", data);
     socket.onAny((event) => {
       console.log(`Event received: ${event}`);
     });
@@ -23,11 +25,14 @@ const handleSocketConnection = (io) => {
     });
 
     // Register cleaner by cleanerId
-    socket.on("register_cleaner", async ({ cleanerId, location }) => {
+    socket.on("register_cleaner", async (data) => {
+      const cleanerData = JSON.parse(data);
+      const {cleanerId,location} = cleanerData;
       console.log(
         "...................cleaner get connected...........cleanerId......",
         cleanerId
       );
+      console.log(location.coordinates);
 
       if (
         !location ||
