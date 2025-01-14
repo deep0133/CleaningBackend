@@ -16,10 +16,12 @@ import {
   verfiyOtpAndRegister,
   updateProfile,
   deleteAccount,
+  updatePhoto,
 } from "../controllers/user/user.controller.js";
-import { otpSend,otpVerification } from "../controllers/otp/otp.controller.js";
+import { otpSend, otpVerification } from "../controllers/otp/otp.controller.js";
 import { isAuthenticated } from "../middleware/authenticateUser.js";
 import { otpLimiter } from "../middleware/otpRateLimiter.js";
+import { multerUpload } from "../utils/multer.js";
 const router = Router();
 
 // Login, Signup Route & Logout
@@ -36,6 +38,12 @@ router.get("/all", allUsers);
 router.post("/add/address", isAuthenticated, addNewAddress);
 router.post("/update/address", isAuthenticated, updateAddress);
 router.post("/update/profile", isAuthenticated, updateProfile);
+router.post(
+  "/update/photo",
+  isAuthenticated,
+  multerUpload.single("profilePhoto"),
+  updatePhoto
+);
 router.post("/change/password", isAuthenticated, changePassword);
 router.post("/deleteAddress", isAuthenticated, deleteAddress);
 
@@ -44,8 +52,8 @@ router.get("/contact", isAuthenticated, getAllContact);
 router.post("/contact", isAuthenticated, submitContactForm);
 
 // Forgot Password & Reset Password
-router.post("/forgotPassword/sendOtp",otpLimiter,otpSend)
-router.post("/forgotPassword/otpverfication",otpVerification)
+router.post("/forgotPassword/sendOtp", otpLimiter, otpSend);
+router.post("/forgotPassword/otpverfication", otpVerification);
 router.post("/forgotPassword/newPassword", forgotPassword);
 router.post("/reset/password", verifyOtp);
 
