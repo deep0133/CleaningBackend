@@ -40,7 +40,7 @@ app.use(
   })
 );
 
-app.use("/images", express.static("uploads"));
+// app.use("/images", express.static("uploads"));
 
 // user routes
 app.use("/api/v1/users", userRouter);
@@ -64,8 +64,6 @@ app.use("/api/v1/admin/cleaner", adminCleanerRouter);
 // Stripe webhooks (must come after other routes, but before body parsing)
 app.post("/webhook/paymentStatus", verifyStripePayment);
 app.post("/webhook/balance", balanceWebhook);
-
-
 
 // Default route for unhandled paths
 app.all("*", (req, res) => {
