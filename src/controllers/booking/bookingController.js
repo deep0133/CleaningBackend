@@ -8,6 +8,9 @@ import validateTimeSlot from "../../utils/validateTimeSlot.js";
 import { NotificationModel } from "../../models/Notification/notificationSchema.js";
 import adminWallet from "../../models/adminWallet/adminWallet.model.js";
 import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
+import {convertISTtoUTC} from "../../utils/TimeConversion/timeConversion.js"
+import { ApiError } from "../../utils/apiError.js";
+
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
@@ -290,50 +293,78 @@ export const acceptBooking = asyncHandler(async (req, res) => {
   }
 });
 
-// Testing pending...
+
+
 export const startService = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
   const { otp } = req.body;
 
   const booking = await BookingService.findById(bookingId);
 
+  console.log("------------------booking----------");
+  console.log(booking.Cleaner);
+
   if (!booking || booking.OTP.start !== otp) {
     return res.status(400).json({ success: false, message: "Invalid OTP" });
   }
 
-  const cleaner = await Cleaner.findById(booking.Cleaner);
-  // check booking time : difference should be 15 minutues
+  const cleaner = await Cleaner.findOne({ user: booking.Cleaner });
+
+  console.log("------------------cleaner------------------");
+  console.log(cleaner);
+
+  if (!cleaner) {
+    throw new ApiError(401, "No cleaner found");
+  }
   const now = new Date();
-  if (
-    !(
-      Math.abs(new Date(booking.CartData[0].TimeSlot.start) - now) >
-      15 * 60 * 1000
-    )
-  ) {
-    return res.status(400).json({
-      success: false,
-      message: "Booking time is not valid",
-    });
+  const startTime = new Date(booking.CartData[0].TimeSlot.start).getTime();
+  console.log("------------------startTime-------------");
+  const utcStartTime = convertISTtoUTC(startTime);
+
+   if( (now.getTime() - new Date(utcStartTime).getTime()) > 30*60*100 )
+    {
+      
+      return res.status(400).json({
+            success: false,
+            message: "Booking time is not valid , more than 30min passed",
+          });
+    }
+
+  if (!cleaner.availability) {
+    throw new ApiError(401, "Cleaner is NOT AVAILABLE");
   }
 
+  // Update cleaner's availability and current booking
   cleaner.availability = false;
   cleaner.currentBooking = bookingId;
 
+
+  cleaner.bookings.pull(bookingId);
+
+  // Update booking status and start time
   booking.BookingStatus = "Started";
-  booking.bookings.pull(bookingId);
   booking.startBooking = new Date(); // Start the timer
 
-  await booking.save();
+ 
+  await cleaner.save(); 
+    await booking.save(); 
+
+
+
 
   res.status(200).json({ success: true, message: "Service started" });
 });
 
+
 export const endService = asyncHandler(async (req, res) => {
-  const { id } = req.params;
+  const { bookingId } = req.params;
   const { otp } = req.body;
 
-  const booking = await BookingService.findById(id).populate("PaymentId");
-  const cleaner = await Cleaner.findById(booking.Cleaner);
+  const booking = await BookingService.findById(bookingId).populate("PaymentId");
+
+  
+  const cleaner = await Cleaner.findOne({ user: booking.Cleaner });
+
 
   if (cleaner.user.toString() !== req.user._id.toString()) {
     return res.status(401).json({
@@ -349,8 +380,11 @@ export const endService = asyncHandler(async (req, res) => {
   booking.BookingStatus = "Completed";
   booking.endBooking = new Date();
 
-  const adminWallet = await adminWallet.findOne();
+  const walletAdmin = await adminWallet.findOne();
+
   const adminCommission = adminWallet.commission || 20;
+
+
 
   // Calculate total price (e.g., $10/hour)
   const paidAmountByCleaner = booking.PaymentId.PaymentValue;
@@ -358,18 +392,17 @@ export const endService = asyncHandler(async (req, res) => {
   // Calculate admin commission (e.g., 20%)
   const cleanerAmountCal =
     ((100 - adminCommission) / 100) * paidAmountByCleaner;
-  // booking.TotalPrice = booking.PaymentValue + extraCharge;
 
-  console.log("------------cleaner Ammount--------------:", cleanerAmountCal);
 
-  adminWallet.ownMoney =
-    adminWallet.ownMoney + (paidAmountByCleaner - cleanerAmountCal);
+  console.log(walletAdmin)
+  walletAdmin.ownMoney =
+  walletAdmin.ownMoney + (paidAmountByCleaner - cleanerAmountCal);
   // udpate cleaner
   cleaner.availability = true;
   cleaner.currentBooking = null;
   cleaner.earnings += cleanerAmountCal;
 
-  await adminWallet.save();
+  await walletAdmin.save();
 
   await booking.save();
   await cleaner.save();
@@ -533,17 +566,29 @@ export const sendStartOtp = asyncHandler(async (req, res) => {
     User: req.user._id,
     _id: bookingId,
   });
-
+  
   if (!booking) {
     return res
       .status(404)
       .json({ success: false, message: "Booking not found" });
   }
 
-  const start = new Date(booking.CartData[0].TimeSlot.start).getTime(); // Start time in milliseconds
+  const start = new Date(booking.CartData[0].TimeSlot.start) // Start time in milliseconds\
+  console.log("------------startTime of the booking accepted------------",start)
+
 
   const now = new Date();
-  if (now >= start || now >= start - 15 * 60 * 1000) {
+  console.log("----------------currentTime----------------",now)
+  console.log("----------------currentTime in millisecond----------------",new Date(now).getTime())
+
+   
+  const startTime = convertISTtoUTC(start);
+
+
+
+
+  
+  if (new Date(now).getTime() >= new Date(startTime).getTime() || new Date(now).getTime() >= new Date(startTime).getTime() - 15 * 60 * 1000) {
     // Allow access
     console.log("User can proceed.");
 
