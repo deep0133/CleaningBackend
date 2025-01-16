@@ -24,7 +24,8 @@ function isAuthenticated(req, res, next) {
     const decoded = jwt.verify(token, SECRET_KEY);
 
     req.user = decoded;
-    next();
+
+        next();
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
       return res.status(401).json({

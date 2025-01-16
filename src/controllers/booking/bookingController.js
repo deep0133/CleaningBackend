@@ -11,7 +11,7 @@ import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import {convertISTtoUTC} from "../../utils/TimeConversion/timeConversion.js"
 import { ApiError } from "../../utils/apiError.js";
 import {sendNotificationToClient} from '../../socket/sendNotification.js'
-
+import {ClientNotificationModel} from '../../models/Notification/clientNotification.model.js'
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
@@ -169,14 +169,14 @@ export const acceptBooking = asyncHandler(async (req, res) => {
     console.log("-------------booking------------",booking);
 
     // Step 3: Check if the booking has already been accepted
-    if (booking.Cleaner) {
-      await session.abortTransaction();
-      session.endSession();
-      return res.status(409).json({
-        success: false,
-        message: "Booking already accepted by another cleaner",
-      });
-    }
+    // if (booking.Cleaner) {
+    //   await session.abortTransaction();
+    //   session.endSession();
+    //   return res.status(409).json({
+    //     success: false,
+    //     message: "Booking already accepted by another cleaner",
+    //   });
+    // }
 
     console.log("-------Step3----------");
 
@@ -244,14 +244,14 @@ export const acceptBooking = asyncHandler(async (req, res) => {
       validateTimeSlotDuration
     );
 
-    if (!validateTimeSlotDuration) {
-      await session.abortTransaction();
-      session.endSession();
-      return res.status(400).json({
-        success: false,
-        message: "Time slot is not available",
-      });
-    }
+    // if (!validateTimeSlotDuration) {
+    //   await session.abortTransaction();
+    //   session.endSession();
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Time slot is not available",
+    //   });
+    // }
 
 
     console.log("----------step 7 -----------session started");
@@ -271,6 +271,10 @@ export const acceptBooking = asyncHandler(async (req, res) => {
     }
     
        sendNotificationToClient(notificationData)
+
+       const clientNotifications = await ClientNotificationModel.create(notificationData)
+       
+      
     console.log(
       "---------- step 8 ------booking_id adding in cleaner schema----"
     );

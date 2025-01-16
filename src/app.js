@@ -16,6 +16,7 @@ import adminAuth from "./routes/adminRoutes.js";
 import morgan from "morgan";
 import disputeRouter from "./routes/dispute.routes.js";
 import { Cleaner } from "./models/Cleaner/cleaner.model.js";
+import clientRouter from "./routes/client.routes.js";
 
 const app = express();
 
@@ -47,6 +48,9 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/otp", otpRouter);
 app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/booking", bookingRouter);
+
+// client Routes
+app.use("/api/v1/client",clientRouter)
 
 // cleaner routes
 app.use("/api/v1/cleaner", cleanerRouter);

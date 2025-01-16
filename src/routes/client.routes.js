@@ -1,8 +1,10 @@
 import { Router } from "express";
-import { registerClient } from "../controllers/user/client.controller";
+import {getNotifications} from "../controllers/client/getNotification.controller.js"
+import {isAuthenticated} from '../middleware/authenticateUser.js'
 
-const router = Router()
+const clientRouter = Router()
 
-router.route('clientRegister').post(registerClient);
 
-export default router;
+clientRouter.route('/getNotifications').get(isAuthenticated,getNotifications)
+
+export default clientRouter;
