@@ -10,6 +10,7 @@ import adminWallet from "../../models/adminWallet/adminWallet.model.js";
 import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import {convertISTtoUTC} from "../../utils/TimeConversion/timeConversion.js"
 import { ApiError } from "../../utils/apiError.js";
+import {sendNotificationToClient} from '../../socket/sendNotification.js'
 
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
@@ -141,7 +142,7 @@ export const createBooking = asyncHandler(async (req, res) => {
 });
 
 
-
+// notification to the cleaner after cleaner accept the booking is pending
 export const acceptBooking = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -154,6 +155,8 @@ export const acceptBooking = asyncHandler(async (req, res) => {
   try {
     // Step 2: Find the booking within the transaction
     const booking = await BookingService.findById(id).session(session);
+    console.log("------------------------boooking-----------------")
+    console.log(booking);
     if (!booking) {
       await session.abortTransaction();
       session.endSession();
@@ -258,6 +261,16 @@ export const acceptBooking = asyncHandler(async (req, res) => {
     booking.BookingStatus = "Confirm"; // Accepted
     await booking.save({ session });
 
+    console.log("---------------sendNotification to the client afterbooking accepted--------------");
+
+    const notificationData = {
+      bookingId:id,
+      message:"your booking is accepted",
+      clientId :booking.User,
+      cleanerId:booking.Cleaner
+    }
+    
+       sendNotificationToClient(notificationData)
     console.log(
       "---------- step 8 ------booking_id adding in cleaner schema----"
     );

@@ -3,6 +3,7 @@ import { User } from "../models/user.model.js";
 import { json } from "express";
 
 const socketIdMap = {};
+const clientSocketIdMap = {};
 
 const handleSocketConnection = (io) => {
   console.count(
@@ -10,13 +11,16 @@ const handleSocketConnection = (io) => {
   );
 
   io.on("connection", (socket) => {
-    // console.log("a user connected............with socket data : ", data);
+
     socket.onAny((event) => {
       console.log(`Event received: ${event}`);
     });
 
-    socket.on("user", () => {
-      console.log("hii user welcome to the server");
+    socket.on("register_client", async (clientId) => {
+      clientSocketIdMap[clientId.toString()] = socket.id;
+      console.log("-----------------------clientSocketId---------",clientSocketIdMap)
+     
+      console.log("hii user welcome to the server",socket.id);
     });
 
     // Register cleaner by cleanerId
@@ -77,31 +81,51 @@ const handleSocketConnection = (io) => {
     });
 
     // Handle disconnection
+ 
+
     socket.on("disconnect", async () => {
-      console.log(
-        "user disconnected.............................................."
-      );
+      console.log("User disconnected.");
+    
       // Find and remove the cleaner who disconnected from the map
-      let found = false;
+      let cleanerFound = false;
       for (const [cleanerId, socketId] of Object.entries(socketIdMap)) {
         if (socketId === socket.id) {
           console.log(`Cleaner ${cleanerId} disconnected.`);
-          // socketIdMap.delete(cleanerId);
           delete socketIdMap[cleanerId];
-          // const cleaner = await Cleaner.findOne({ user: cleanerId });
-          // cleaner.isOnline = false;
-          found = true;
+          cleanerFound = true;
           break;
         }
       }
-      if (!found) {
+    
+      // Find and remove the client who disconnected from the map
+      let clientFound = false;
+      for (const [clientId, socketId] of Object.entries(clientSocketIdMap)) {
+        if (socketId === socket.id) {
+          console.log(`Client ${clientId} disconnected.`);
+          delete clientSocketIdMap[clientId];
+          clientFound = true;
+          break;
+        }
+      }
+    
+      // Logs if the disconnected socket wasn't associated with any user
+      if (!cleanerFound) {
         console.log("Disconnected socket was not associated with any cleaner.");
       }
-      io.emit("notification", "A cleaner has disconnected.");
+      if (!clientFound) {
+        console.log("Disconnected socket was not associated with any client.");
+      }
+    
+      // Emit notification to all connected clients
+      io.emit("notification", "A user has disconnected");
     });
+    
+
+
+
   });
 };
 
-export { handleSocketConnection, socketIdMap };
+export { handleSocketConnection, socketIdMap,clientSocketIdMap };
 
 // ngrok http http://localhost:5911

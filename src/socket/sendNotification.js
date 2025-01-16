@@ -3,36 +3,18 @@
 import { socketIdMap } from "./socketHandler.js";
 import { getSocketIO } from "./socketConfig.js";
 import { BookingService } from "../models/Client/booking.model.js";
+import { clientSocketIdMap } from "./socketHandler.js";
 
 const sendNotification = async (cleaners, notificationData) => {
-  console.log(
-    "------------------------------------------------------------------"
-  );
-  console.log(
-    "------------------------------------------------------------------"
-  );
-  console.log(
-    "------------------------------------------------------------------"
-  );
+
   console.log(
     "------------------------------------in sendNotification------------------------------"
   );
-  console.log(
-    "------------------------------------------------------------------"
-  );
-  console.log(
-    "------------------------------------------------------------------"
-  );
-  console.log(
-    "------------------------------------------------------------------"
-  );
+
 
   // Initialize Socket.IO
   const io = getSocketIO();
-  console.log("............socketMap...............", socketIdMap);
 
-  console.log("............cleaners...............", cleaners);
-  console.log("---------------notificationData---------",notificationData)
 
   // Loop through the list of cleaners
   cleaners.forEach((cleaner) => {
@@ -55,3 +37,35 @@ const sendNotification = async (cleaners, notificationData) => {
 };
 
 export default sendNotification;
+
+
+
+
+export const sendNotificationToClient = (notificationData) => {
+
+  const io = getSocketIO();
+  const targetClientId = notificationData.clientId.toString(); 
+
+
+
+  let socketId = null;
+  for (const key in clientSocketIdMap) {
+    try {
+      const parsedKey = JSON.parse(key); 
+      if (parsedKey.clientId === targetClientId) {
+        socketId = clientSocketIdMap[key];
+        break; 
+      }
+    } catch (error) {
+      console.error("Error parsing key:", key, error.message);
+    }
+  }
+
+
+  if (socketId) {
+    io.to(socketId).emit("message", notificationData.message);
+    console.log("Notification sent successfully.");
+  } else {
+    console.log("Socket ID not found for clientId:", targetClientId);
+  }
+};
