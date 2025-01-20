@@ -12,11 +12,13 @@ export const pendingBookings = asyncHandler(async (req,res)=>{
         BookingStatus: "Pending", 
       }
     );
+    console.log("------------------bookings--------------------")
+    console.log(bookings)
 
-    if(!bookings){
-        res.status(201)
-        .json(new ApiResponse(201,{},"no pending Bookings",true))
-    }
+  if(bookings.length===0){
+    res.status(201)
+    .json(new ApiResponse(201,bookings,"no bookings are Pending",true))
+  }
 
     res.status(201)
     .json(new ApiResponse(201,bookings,"Bookings Still pending",true));
