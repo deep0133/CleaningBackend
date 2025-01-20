@@ -384,6 +384,8 @@ const getAllContact = asyncHandler(async (req, res) => {
 // Enter Phone Number To Recieve OTP for reset password
 const forgotPassword = asyncHandler(async (req, res) => {
   const { newPassword, phoneNumber } = req.body;
+
+  
   // const resetToken =  req.headers['authorization']?.split(' ')[1];
 
   // console.log("----------------resetToken------------");

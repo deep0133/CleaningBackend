@@ -5,7 +5,9 @@ import { Cart } from "../../models/Client/cart.model.js";
 import { PaymentModel } from "../../models/Client/paymentModel.js";
 import AdminWallet from "../../models/adminWallet/adminWallet.model.js";
 import { ApiResponse } from "../../utils/apiResponse.js";
-import { findNearbyCleanersController } from "../../utils/findNearByUser.js";
+import { findNearbyCleanersController } from "../../utils/findNearByUser.js"
+
+import { ApiError } from "../../utils/apiError.js";
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
@@ -136,6 +138,15 @@ export const verifyStripePayment = asyncHandler(async (request, response) => {
 
   const { type, data } = event;
   const paymentIntent = data.object;
+  console.log("----------------paymentIntent------------------------")
+  const bookingId = paymentIntent.metadata.bookingModelId;
+  console.log("----------------bookingId at verifyPament----------------");
+  console.log(bookingId);
+
+
+
+
+
 
   try {
     await handleEvent(type, paymentIntent);
@@ -149,3 +160,5 @@ export const verifyStripePayment = asyncHandler(async (request, response) => {
   // Acknowledge receipt of the event
   response.status(200).send("Webhook event processed");
 });
+
+

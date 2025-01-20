@@ -17,6 +17,9 @@ const otpSend = asyncHandler(async (req, res) => {
     throw new ApiError(401, "user with this phone number is already exists");
   }
 
+  user.isOtpVerified = false;
+  await user.save();
+
   try {
     const currentStatus = await sendOtp(phoneNumber);
 
@@ -38,11 +41,7 @@ const otpVerification = asyncHandler(async (req, res) => {
     throw new ApiError(401, "phoneNumber and otp is required");
   }
 
-  // context is pending for otpverification
 
-  // if(!context){
-  //   throw new ApiError(401,"add context also")
-  // }
   const user = await User.findOne({ phoneNumber });
 
   if (!user) {

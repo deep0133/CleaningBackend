@@ -169,14 +169,14 @@ export const acceptBooking = asyncHandler(async (req, res) => {
     console.log("-------------booking------------",booking);
 
     // Step 3: Check if the booking has already been accepted
-    // if (booking.Cleaner) {
-    //   await session.abortTransaction();
-    //   session.endSession();
-    //   return res.status(409).json({
-    //     success: false,
-    //     message: "Booking already accepted by another cleaner",
-    //   });
-    // }
+    if (booking.Cleaner) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(409).json({
+        success: false,
+        message: "Booking already accepted by another cleaner",
+      });
+    }
 
     console.log("-------Step3----------");
 
@@ -244,14 +244,14 @@ export const acceptBooking = asyncHandler(async (req, res) => {
       validateTimeSlotDuration
     );
 
-    // if (!validateTimeSlotDuration) {
-    //   await session.abortTransaction();
-    //   session.endSession();
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: "Time slot is not available",
-    //   });
-    // }
+    if (!validateTimeSlotDuration) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({
+        success: false,
+        message: "Time slot is not available",
+      });
+    }
 
 
     console.log("----------step 7 -----------session started");

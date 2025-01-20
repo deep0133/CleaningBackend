@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/user.model.js";
 const SECRET_KEY = process.env.ACCESS_TOKEN_SECERET;
 
-function isAuthenticated(req, res, next) {
+function isAuthenticated(req, res, next) { 
   const authorization = req.headers.authorization;
 
   if (!authorization) {
