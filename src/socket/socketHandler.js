@@ -86,12 +86,15 @@ const handleSocketConnection = (io) => {
 
     socket.on("register_cleaner", async (data) => {
       try {
-        console.log("..................data........................");
-        console.log(data);
+        // console.log("..................data........................");
+        // console.log(data);
     
         let cleanerData;
         try {
-          cleanerData = JSON.parse(data);
+          // cleanerData = JSON.parse(data);
+          cleanerData = data;
+          console.log(".........................cleanerData................");
+          console.log(cleanerData)
         } catch (err) {
           console.error("Failed to parse data. Ensure it's valid JSON:", err);
           return;
