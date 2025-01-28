@@ -89,9 +89,9 @@ const handleSocketConnection = (io) => {
     
         let cleanerData;
         try {
-          // cleanerData = JSON.parse(data);
-          cleanerData = data;
-        
+          cleanerData = JSON.parse(data);
+          // cleanerData = data;
+          console.log("..........cleanerData.....................");
           console.log(cleanerData)
         } catch (err) {
           console.error("Failed to parse data. Ensure it's valid JSON:", err);

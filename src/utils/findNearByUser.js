@@ -171,7 +171,8 @@ export const  findNearbyCleanersController = async (longitude,
     console.log("Booking Id is required");
     return false;
   }
-  console.log("-------------bookingId at findNearByCleaner------------",bookingId);
+
+  // console.log("-------------bookingId at findNearByCleaner------------",bookingId);
   const bookingDetail = await BookingService.findById(bookingId).populate({
     path: "CartData.categoryId",
     select: "name",
@@ -195,7 +196,7 @@ export const  findNearbyCleanersController = async (longitude,
 
 
 
- 
+  console.log("------------step 1-----------------");
 
   const nearbyCleaners = await User.aggregate([
     {
@@ -260,15 +261,14 @@ export const  findNearbyCleanersController = async (longitude,
     return false;
   }
 
-  
-
+  console.log("-------------step 2-----------------");
   const notificationData = {
     bookingId: bookingId,
     name: bookingDetail.CartData[0].categoryId.name,
     jobType: bookingDetail.CartData[0].categoryId._id,
     location: bookingDetail.CartData[0].UserAddress,
     dateTime: bookingDetail.CartData[0].TimeSlot,
-    price: bookingDetail.PaymentId.PaymentValue,
+    price: `$${bookingDetail.CartData[0].categoryId.price} `,
     message: "New cleaning request",
   };
 
@@ -286,6 +286,7 @@ export const  findNearbyCleanersController = async (longitude,
   const cleanerIds = nearbyCleaners.map((cleaner) => cleaner._id.toString());
 
     
+console.log("-------------step 3-----------------");
 
   const notifications = cleanerIds.map((cleanerId) => ({
     cleanerId,
