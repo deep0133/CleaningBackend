@@ -154,7 +154,7 @@ import mongoose from "mongoose";
 //   }
 // };
 
-export const findNearbyCleanersController = async (longitude,
+export const  findNearbyCleanersController = async (longitude,
   latitude,
   bookingId
 ) => {
@@ -163,7 +163,6 @@ export const findNearbyCleanersController = async (longitude,
     console.log("Longitude and latitude are required");
     return false;
   }
-    
 
    console.log("-------in findnear by cleaner----");
 
@@ -194,16 +193,7 @@ export const findNearbyCleanersController = async (longitude,
 
   // Find nearby cleaners using $geoNear
 
-  console.log(
-    "---------------------------------------------------------------------------------------"
-  );
-  console.log(
-    "------------------------------------------category---------------------------------------------",
-    category
-  );
-  console.log(
-    "---------------------------------------------------------------------------------------"
-  );
+
 
  
 
@@ -263,19 +253,19 @@ export const findNearbyCleanersController = async (longitude,
   const notificationExists = await NotificationModel.findOne({
     bookingId: bookingId,
   });
-  console.log("------------notification exists-----------",notificationExists);
+
 
   if (notificationExists) {
     console.log("Notification already sent to nearby cleaners");
     return false;
   }
 
-  console.log("-------------bookingId--at-findNearByCleaner----------",bookingId);
+  
 
   const notificationData = {
     bookingId: bookingId,
-    name: bookingDetail?.User?.name,
-    jobType: bookingDetail.CartData[0].categoryId,
+    name: bookingDetail.CartData[0].categoryId.name,
+    jobType: bookingDetail.CartData[0].categoryId._id,
     location: bookingDetail.CartData[0].UserAddress,
     dateTime: bookingDetail.CartData[0].TimeSlot,
     price: bookingDetail.PaymentId.PaymentValue,
@@ -299,7 +289,7 @@ export const findNearbyCleanersController = async (longitude,
 
   const notifications = cleanerIds.map((cleanerId) => ({
     cleanerId,
-    name: bookingDetail?.User?.name,
+    name:  bookingDetail.CartData[0].categoryId.name,
     address: bookingDetail.CartData[0].UserAddress,
     bookingId: bookingId,
     message: "New cleaning request", // Mark as read if the cleaner is connected

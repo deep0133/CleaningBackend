@@ -84,29 +84,24 @@ const handleSocketConnection = (io) => {
 
     socket.on("register_cleaner", async (data) => {
       try {
-        // console.log("..................data........................");
-        // console.log(data);
+        console.log("..................data........................");
+        console.log(data);
     
         let cleanerData;
         try {
           // cleanerData = JSON.parse(data);
           cleanerData = data;
-          console.log(".........................cleanerData................");
+        
           console.log(cleanerData)
         } catch (err) {
           console.error("Failed to parse data. Ensure it's valid JSON:", err);
           return;
         }
-    
-        console.log("..................cleanerData....................");
-        console.log(cleanerData);
+
     
         const { cleanerId, location } = cleanerData;
     
-        console.log(
-          "...................cleaner get connected...........cleanerId......",
-          cleanerId
-        );
+      
 
         console.log("..........locationCoordinates.....................");
         console.log(location?.coordinates);
@@ -166,10 +161,7 @@ const handleSocketConnection = (io) => {
         console.error("Unexpected error in register_cleaner event handler:", mainError);
       }
     });
-    
 
-    // Handle disconnection
- 
 
     socket.on("disconnect", async () => {
       console.log("User disconnected.");

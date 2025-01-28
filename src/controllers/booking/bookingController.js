@@ -269,6 +269,9 @@ export const acceptBooking = asyncHandler(async (req, res) => {
       clientId :booking.User,
       cleanerId:booking.Cleaner
     }
+
+    console.log("---------------notificationData------------------")
+    console.log(notificationData)
     
        sendNotificationToClient(notificationData)
 

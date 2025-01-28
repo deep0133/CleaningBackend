@@ -283,7 +283,7 @@ const updateProfile = asyncHandler(async (req, res) => {
 
 const updateAddress = asyncHandler(async (req, res) => {
   const { address, addressId } = req.body;
-
+      
   // Find the user by their ID
   const user = await User.findById(req.user._id);
 
@@ -313,6 +313,7 @@ const updateAddress = asyncHandler(async (req, res) => {
 
     // Update the existing address
     user.address[addressIndex] = address;
+    console.log("-----------address-----------------", address);
   } else if (address) {
     // Push a new address if `addressId` is not provided
     user.address.push(address);
@@ -331,11 +332,17 @@ const addNewAddress = asyncHandler(async (req, res) => {
 
   const user = await User.findById(req.user._id);
 
-  if (address) user.address.push(address);
+  
+
+
+  if (address) {
+   
+    user.address.push(address);
+  }
 
   await user.save();
 
-  res.status(200).json({ success: true, message: "Address Updated" });
+  res.status(200).json({ success: true, message: "Address Updated", });
 });
 
 const changePassword = asyncHandler(async (req, res, next) => {

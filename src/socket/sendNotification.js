@@ -11,7 +11,7 @@ const sendNotification = async (cleaners, notificationData) => {
     "------------------------------------in sendNotification------------------------------"
   );
 
-
+  console.log(notificationData);
   // Initialize Socket.IO
   const io = getSocketIO();
 
