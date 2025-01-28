@@ -172,11 +172,13 @@ export const  findNearbyCleanersController = async (longitude,
     return false;
   }
 
-  // console.log("-------------bookingId at findNearByCleaner------------",bookingId);
+ console.log("------------step 0-----------------");
   const bookingDetail = await BookingService.findById(bookingId).populate({
     path: "CartData.categoryId",
     select: "name",
   });
+
+
 
   const category =  bookingDetail.CartData[0].categoryId._id;
   
@@ -262,15 +264,18 @@ export const  findNearbyCleanersController = async (longitude,
   }
 
   console.log("-------------step 2-----------------");
+  console.log("-----------price----------------",bookingDetail.CartData[0].TotalPrice);
   const notificationData = {
     bookingId: bookingId,
     name: bookingDetail.CartData[0].categoryId.name,
     jobType: bookingDetail.CartData[0].categoryId._id,
     location: bookingDetail.CartData[0].UserAddress,
     dateTime: bookingDetail.CartData[0].TimeSlot,
-    price: `$${bookingDetail.CartData[0].categoryId.price} `,
+    price: bookingDetail.CartData[0].TotalPrice,
     message: "New cleaning request",
   };
+
+  
 
   // const connectedCleanersIds = Object.values(socketIdMap);
   const connectedCleanersIds = Object.values(socketIdMap); // Get all values
