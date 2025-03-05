@@ -1,6 +1,5 @@
 import { socketIdMap } from "./socketHandler.js";
 import { getSocketIO } from "./socketConfig.js";
-import { BookingService } from "../models/Client/booking.model.js";
 import { clientSocketIdMap } from "./socketHandler.js";
 
 const sendNotification = async (cleaners, notificationData) => {

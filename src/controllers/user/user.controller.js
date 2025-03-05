@@ -313,6 +313,7 @@ const updateAddress = asyncHandler(async (req, res) => {
 
     // Update the existing address
     user.address[addressIndex] = address;
+    console.log("-----------address-----------------", address);
   } else if (address) {
     // Push a new address if `addressId` is not provided
     user.address.push(address);
@@ -331,7 +332,9 @@ const addNewAddress = asyncHandler(async (req, res) => {
 
   const user = await User.findById(req.user._id);
 
-  if (address) user.address.push(address);
+  if (address) {
+    user.address.push(address);
+  }
 
   await user.save();
 
@@ -385,7 +388,6 @@ const getAllContact = asyncHandler(async (req, res) => {
 const forgotPassword = asyncHandler(async (req, res) => {
   const { newPassword, phoneNumber } = req.body;
 
-  
   // const resetToken =  req.headers['authorization']?.split(' ')[1];
 
   // console.log("----------------resetToken------------");
