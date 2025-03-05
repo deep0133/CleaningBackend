@@ -140,7 +140,6 @@ const getWalletDetails = async (req, res) => {
       },
     });
 
-    console.log(AdminWallet);
     if (!AdminWallet) {
       return res.status(404).json({
         success: false,

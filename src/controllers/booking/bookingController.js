@@ -1,17 +1,18 @@
 import mongoose from "mongoose";
 import Stripe from "stripe";
+import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
 import { BookingService } from "../../models/Client/booking.model.js";
-import { asyncHandler } from "../../utils/asyncHandler.js";
 import { Cart } from "../../models/Client/cart.model.js";
 import { PaymentModel } from "../../models/Client/paymentModel.js";
-import validateTimeSlot from "../../utils/validateTimeSlot.js";
-import { NotificationModel } from "../../models/Notification/notificationSchema.js";
+import { ClientNotificationModel } from "../../models/Notification/clientNotification.model.js";
 import adminWallet from "../../models/adminWallet/adminWallet.model.js";
-import { Cleaner } from "../../models/Cleaner/cleaner.model.js";
-import {convertISTtoUTC} from "../../utils/TimeConversion/timeConversion.js"
+import { sendNotificationToClient } from "../../socket/sendNotification.js";
+import { convertISTtoUTC } from "../../utils/TimeConversion/timeConversion.js";
 import { ApiError } from "../../utils/apiError.js";
-import {sendNotificationToClient} from '../../socket/sendNotification.js'
-import {ClientNotificationModel} from '../../models/Notification/clientNotification.model.js'
+import { asyncHandler } from "../../utils/asyncHandler.js";
+import validateTimeSlot from "../../utils/validateTimeSlot.js";
+
+import { money, add, toCents, toNum } from "../../utils/moneyConversion.js";
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
@@ -20,7 +21,6 @@ export const createBooking = asyncHandler(async (req, res) => {
 
   const cart = await Cart.findById(cartId);
 
-  // console.log("--------step 1-------check cart,", cart);
   if (cart === null || cart.cart.length === 0) {
     return res.status(404).json({ success: false, message: "Cart not found" });
   }
@@ -31,7 +31,6 @@ export const createBooking = asyncHandler(async (req, res) => {
       .json({ success: false, message: "Cart should have only one item" });
   }
 
-  console.log("--------step 2-------check cart time slot");
   // validate user
   if (cart.User.toString() !== req.user._id.toString()) {
     return res.status(401).json({
@@ -47,12 +46,6 @@ export const createBooking = asyncHandler(async (req, res) => {
     "CartData.TimeSlot.end": cart.cart[0].TimeSlot.end,
   }).populate("PaymentId");
 
-  console.log("......................paymentStatus..........")
-
-  // console.log(
-  //   "---------step 3 ---existing booking ---- checking-----------:",
-  //   existingBooking
-  // );
   if (existingBooking && existingBooking.PaymentId.PaymentStatus) {
     return res
       .status(400)
@@ -71,9 +64,6 @@ export const createBooking = asyncHandler(async (req, res) => {
   let adminWalletData = (await adminWallet.findOne({})) || {};
 
   if (!adminWalletData) {
-    console.log(
-      "-------Admin commission not set.--- default set to 10%-------"
-    );
     adminWalletData.commission = 10;
   }
 
@@ -117,7 +107,6 @@ export const createBooking = asyncHandler(async (req, res) => {
     await session.commitTransaction();
     session.endSession();
 
-    // Return response with the Razorpay order details if available
     res.status(201).json({
       success: true,
       booking,
@@ -132,8 +121,6 @@ export const createBooking = asyncHandler(async (req, res) => {
     await session.abortTransaction();
     session.endSession();
 
-    console.log("-------------Failed---------:", error.message);
-
     res.status(500).json({
       success: false,
       message: error.message || "Failed to create booking",
@@ -141,12 +128,9 @@ export const createBooking = asyncHandler(async (req, res) => {
   }
 });
 
-
 // notification to the cleaner after cleaner accept the booking is pending
 export const acceptBooking = asyncHandler(async (req, res) => {
   const { id } = req.params;
-
-  console.log("------Step1-----------id---:", req.user._id);
 
   // Step 1: Start a session for atomic transaction
   const session = await BookingService.startSession();
@@ -155,8 +139,6 @@ export const acceptBooking = asyncHandler(async (req, res) => {
   try {
     // Step 2: Find the booking within the transaction
     const booking = await BookingService.findById(id).session(session);
-    console.log("------------------------boooking-----------------")
-    console.log(booking);
     if (!booking) {
       await session.abortTransaction();
       session.endSession();
@@ -164,9 +146,6 @@ export const acceptBooking = asyncHandler(async (req, res) => {
         .status(404)
         .json({ success: false, message: "Booking not found" });
     }
-
-    console.log("-------Step2----------");
-    console.log("-------------booking------------",booking);
 
     // Step 3: Check if the booking has already been accepted
     if (booking.Cleaner) {
@@ -178,8 +157,6 @@ export const acceptBooking = asyncHandler(async (req, res) => {
       });
     }
 
-    console.log("-------Step3----------");
-
     // Step 4: Ensure cleaner is available
     const cleaner = await Cleaner.findOne({
       user: req.user._id,
@@ -190,17 +167,13 @@ export const acceptBooking = asyncHandler(async (req, res) => {
       })
       .session(session);
 
-    const allCarts = cleaner.bookings.map((booking)=>{
+    const allCarts = cleaner.bookings.map((booking) => {
       return booking.CartData;
-    })
-    console.log("---------------cartData------------------")
-    console.log(allCarts)
+    });
 
     const timeSlots = allCarts.flatMap((cart) =>
       cart.map((item) => item.TimeSlot)
     );
-
-
 
     if (!cleaner) {
       await session.abortTransaction();
@@ -211,8 +184,6 @@ export const acceptBooking = asyncHandler(async (req, res) => {
       });
     }
 
-    console.log("---------step 4 cleaner not found----------");
-
     // Step 5: Validate booking status (e.g., ensure it's not expired)
     const now = new Date();
     if (booking.CartData[0].TimeSlot.start < now) {
@@ -222,26 +193,13 @@ export const acceptBooking = asyncHandler(async (req, res) => {
         .status(400)
         .json({ success: false, message: "Cannot accept an expired booking" });
     }
-    console.log(
-      "---------step 5 booking found--- with future time slot-------"
-    );
 
     // Step 6: Check bookings timeslots with current booking
     const cleanerBookings = cleaner.bookings;
 
-    console.log(
-      "---------step 6 cleaner booking found-------",
-      cleanerBookings
-    );
-
     const validateTimeSlotDuration = validateTimeSlot(
       cleanerBookings,
       booking.CartData[0].TimeSlot
-    );
-
-    console.log(
-      "---------Time slot check and value is ---------:",
-      validateTimeSlotDuration
     );
 
     if (!validateTimeSlotDuration) {
@@ -253,31 +211,24 @@ export const acceptBooking = asyncHandler(async (req, res) => {
       });
     }
 
-
-    console.log("----------step 7 -----------session started");
-
     // Step 7: Assign the booking to the cleaner
     booking.Cleaner = req.user._id;
     booking.BookingStatus = "Confirm"; // Accepted
     await booking.save({ session });
 
-    console.log("---------------sendNotification to the client afterbooking accepted--------------");
-
     const notificationData = {
-      bookingId:id,
-      message:"your booking is accepted",
-      clientId :booking.User,
-      cleanerId:booking.Cleaner
-    }
-    
-       sendNotificationToClient(notificationData)
+      bookingId: id,
+      message: "your booking is accepted",
+      clientId: booking.User,
+      cleanerId: booking.Cleaner,
+    };
 
-       const clientNotifications = await ClientNotificationModel.create(notificationData)
-       
-      
-    console.log(
-      "---------- step 8 ------booking_id adding in cleaner schema----"
+    sendNotificationToClient(notificationData);
+
+    const clientNotifications = await ClientNotificationModel.create(
+      notificationData
     );
+
     cleaner.totalBookings += 1;
     cleaner.bookings.push(booking._id);
 
@@ -298,11 +249,6 @@ export const acceptBooking = asyncHandler(async (req, res) => {
     await session.abortTransaction();
     session.endSession();
 
-    console.log(
-      "-----------------Error in catch block-------------:",
-      error.message
-    );
-
     res.status(500).json({
       success: false,
       message: "Failed to accept booking. Please try again.",
@@ -310,16 +256,11 @@ export const acceptBooking = asyncHandler(async (req, res) => {
   }
 });
 
-
-
 export const startService = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
   const { otp } = req.body;
 
   const booking = await BookingService.findById(bookingId);
-
-  console.log("------------------booking----------");
-  console.log(booking.Cleaner);
 
   if (!booking || booking.OTP.start !== otp) {
     return res.status(400).json({ success: false, message: "Invalid OTP" });
@@ -327,25 +268,19 @@ export const startService = asyncHandler(async (req, res) => {
 
   const cleaner = await Cleaner.findOne({ user: booking.Cleaner });
 
-  console.log("------------------cleaner------------------");
-  console.log(cleaner);
-
   if (!cleaner) {
     throw new ApiError(401, "No cleaner found");
   }
   const now = new Date();
   const startTime = new Date(booking.CartData[0].TimeSlot.start).getTime();
-  console.log("------------------startTime-------------");
   const utcStartTime = convertISTtoUTC(startTime);
 
-   if( (now.getTime() - new Date(utcStartTime).getTime()) > 30*60*100 )
-    {
-      
-      return res.status(400).json({
-            success: false,
-            message: "Booking time is not valid , more than 30min passed",
-          });
-    }
+  if (now.getTime() - new Date(utcStartTime).getTime() > 30 * 60 * 100) {
+    return res.status(400).json({
+      success: false,
+      message: "Booking time is not valid , more than 30min passed",
+    });
+  }
 
   if (!cleaner.availability) {
     throw new ApiError(401, "Cleaner is NOT AVAILABLE");
@@ -355,33 +290,27 @@ export const startService = asyncHandler(async (req, res) => {
   cleaner.availability = false;
   cleaner.currentBooking = bookingId;
 
-
   cleaner.bookings.pull(bookingId);
 
   // Update booking status and start time
   booking.BookingStatus = "Started";
   booking.startBooking = new Date(); // Start the timer
 
- 
-  await cleaner.save(); 
-    await booking.save(); 
-
-
-
+  await cleaner.save();
+  await booking.save();
 
   res.status(200).json({ success: true, message: "Service started" });
 });
-
 
 export const endService = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
   const { otp } = req.body;
 
-  const booking = await BookingService.findById(bookingId).populate("PaymentId");
+  const booking = await BookingService.findById(bookingId).populate(
+    "PaymentId"
+  );
 
-  
   const cleaner = await Cleaner.findOne({ user: booking.Cleaner });
-
 
   if (cleaner.user.toString() !== req.user._id.toString()) {
     return res.status(401).json({
@@ -399,32 +328,54 @@ export const endService = asyncHandler(async (req, res) => {
 
   const walletAdmin = await adminWallet.findOne();
 
-  const adminCommission = adminWallet.commission || 20;
+  const adminCommission = adminWallet?.commission ?? 20;
 
+  // Convert payment amount to a `money` object (stored in cents)
+  const paidAmountByUser = money(
+    booking.PaymentId.PaymentValue,
+    toCents(booking.PaymentId.PaymentValue)
+  );
 
+  // Calculate admin earnings (commission in cents)
+  const adminEarnings = money(
+    null,
+    Math.round((adminCommission * paidAmountByUser.value) / 100)
+  );
 
-  // Calculate total price (e.g., $10/hour)
-  const paidAmountByCleaner = booking.PaymentId.PaymentValue;
+  // // Calculate cleaner's amount in cents
+  const cleanerAmountCal = money(
+    null,
+    paidAmountByUser.value - adminEarnings.value
+  );
 
-  // Calculate admin commission (e.g., 20%)
-  const cleanerAmountCal =
-    ((100 - adminCommission) / 100) * paidAmountByCleaner;
+  // Convert back to dollars/rupees safely
+  const finalCleanerAmount = toNum(cleanerAmountCal.value);
 
+  // Update walletAdmin's ownMoney properly
+  walletAdmin.ownMoney = add(
+    money(adminWallet.ownMoney, toCents(adminWallet.ownMoney)),
+    adminEarnings
+  ).number;
 
-  console.log(walletAdmin)
-  walletAdmin.ownMoney =
-  walletAdmin.ownMoney + (paidAmountByCleaner - cleanerAmountCal);
   // udpate cleaner
   cleaner.availability = true;
   cleaner.currentBooking = null;
-  cleaner.earnings += cleanerAmountCal;
+  cleaner.earnings += finalCleanerAmount;
+  // cleaner.earnings = add(money(cleaner.earnings), cleanerAmountCal).number;
 
   await walletAdmin.save();
 
   await booking.save();
   await cleaner.save();
 
-  res.status(200).json({ success: true, booking });
+  res.status(200).json({
+    success: true,
+    data: {
+      adminEarnings,
+      cleanin,
+    },
+    booking,
+  });
 });
 
 //----------------------------------------------------------------------
@@ -468,7 +419,6 @@ export const getUserBookings = asyncHandler(async (req, res) => {
 
 // Get Cleaner Bookings
 export const getCleanerBookings = asyncHandler(async (req, res) => {
-  console.log("------------req.user._id--------------", req.user._id);
   const bookings = await BookingService.find({
     Cleaner: req.user._id,
   })
@@ -505,10 +455,12 @@ export const getBookingById = asyncHandler(async (req, res) => {
 // Get All Upcomming Bookings :
 export const getAllUpcomingBookings = asyncHandler(async (req, res) => {
   const bookings = await BookingService.find({
-    "TimeSlot.start": { $gt: new Date() },
+    CartData: {
+      $elemMatch: { "TimeSlot.start": { $gt: new Date() } },
+    },
   })
-    .populate({ path: "User", select: "-password -__v" })
-    .populate("Cleaner");
+    .populate({ path: "User", select: "-password -__v" }) // Use correct case
+    .populate("Cleaner"); // Use correct case
 
   res.status(200).json({ success: true, bookings });
 });
@@ -516,7 +468,9 @@ export const getAllUpcomingBookings = asyncHandler(async (req, res) => {
 // Get All Past Bookings :
 export const getAllPastBookings = asyncHandler(async (req, res) => {
   const bookings = await BookingService.find({
-    "TimeSlot.end": { $lt: new Date() },
+    CartData: {
+      $elemMatch: { "TimeSlot.end": { $lt: new Date() } },
+    },
   })
     .populate({ path: "User", select: "-password -__v" })
     .populate("Cleaner");
@@ -526,9 +480,14 @@ export const getAllPastBookings = asyncHandler(async (req, res) => {
 
 // Get Current Bookings :
 export const getCurrentBookings = asyncHandler(async (req, res) => {
+  const currentTime = new Date();
   const bookings = await BookingService.find({
-    "TimeSlot.start": { $lte: new Date() },
-    "TimeSlot.end": { $gte: new Date() },
+    cartData: {
+      $elemMatch: {
+        "TimeSlot.start": { $lte: currentTime },
+        "TimeSlot.end": { $gte: currentTime },
+      },
+    },
   })
     .populate({ path: "User", select: "-password -__v" })
     .populate("Cleaner");
@@ -536,30 +495,55 @@ export const getCurrentBookings = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, bookings });
 });
 
-// Cancel Booking by Admin
 export const cancelBookingByAdmin = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
+  const session = await mongoose.startSession(); // Start a session
+  session.startTransaction();
 
-  // Find the booking
-  const booking = await BookingService.findById(bookingId).populate(
-    "PaymentId"
-  );
-
-  if (!booking) {
-    return res
-      .status(404)
-      .json({ success: false, message: "Booking not found" });
-  }
-
-  // Refund the payment on Stripe
   try {
+    // Find the booking
+    const booking = await BookingService.findById(bookingId).session(session);
+
+    if (!booking) {
+      await session.abortTransaction();
+      session.endSession();
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
+    }
+
+    if (booking.Cleaner) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({
+        success: false,
+        message: "Booking can't cancel due to accepted by cleaner",
+      });
+    }
+
+    const paymentModel = await PaymentModel.findById(booking.PaymentId).session(
+      session
+    );
+
+    // Refund the payment on Stripe
     const refund = await stripe.refunds.create({
-      payment_intent: booking.PaymentId.stripeOrderId,
+      payment_intent: paymentModel.stripeOrderId,
+      metadata: {
+        reason: "Customer requested a refund",
+        bookingModelId: booking._id.toString(),
+      },
     });
 
     // Update the booking status
     booking.BookingStatus = "Cancel";
-    await booking.save();
+    paymentModel.refundId = refund.id;
+
+    await await paymentModel.save({ session });
+    await await booking.save({ session });
+
+    // Commit the transaction
+    await session.commitTransaction();
+    session.endSession();
 
     return res.status(200).json({
       success: true,
@@ -567,10 +551,13 @@ export const cancelBookingByAdmin = asyncHandler(async (req, res) => {
       refund,
     });
   } catch (error) {
-    console.error("Stripe refund error:", error);
+    // Rollback the transaction if an error occurs
+    await session.abortTransaction();
+    session.endSession();
+
     return res.status(500).json({
       success: false,
-      message: "Failed to process refund. Try again later.",
+      message: "Failed to cancel booking and process refund. Try again later.",
     });
   }
 });
@@ -583,32 +570,24 @@ export const sendStartOtp = asyncHandler(async (req, res) => {
     User: req.user._id,
     _id: bookingId,
   });
-  
+
   if (!booking) {
     return res
       .status(404)
       .json({ success: false, message: "Booking not found" });
   }
 
-  const start = new Date(booking.CartData[0].TimeSlot.start) // Start time in milliseconds\
-  console.log("------------startTime of the booking accepted------------",start)
-
+  const start = new Date(booking.CartData[0].TimeSlot.start); // Start time in milliseconds\
 
   const now = new Date();
-  console.log("----------------currentTime----------------",now)
-  console.log("----------------currentTime in millisecond----------------",new Date(now).getTime())
 
-   
   const startTime = convertISTtoUTC(start);
 
-
-
-
-  
-  if (new Date(now).getTime() >= new Date(startTime).getTime() || new Date(now).getTime() >= new Date(startTime).getTime() - 15 * 60 * 1000) {
+  if (
+    new Date(now).getTime() >= new Date(startTime).getTime() ||
+    new Date(now).getTime() >= new Date(startTime).getTime() - 15 * 60 * 1000
+  ) {
     // Allow access
-    console.log("User can proceed.");
-
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
 
     booking.OTP.start = otp;
@@ -618,7 +597,6 @@ export const sendStartOtp = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, message: "OTP sent", otp });
   } else {
     // Deny access
-    console.log("User has to wait.");
     res.json({
       success: false,
       message: "User has to wait for the booking to start.",

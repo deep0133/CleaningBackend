@@ -20,6 +20,7 @@ const paymentSchema = mongoose.Schema({
       "amount_capturable", // Payment is authorized but not captured
       "canceled", // Booking/payment was canceled
       "created", // Booking is created but no payment initiated
+      "refunded",
       "partially_funded", // Partially paid
       "failed", // Payment attempt failed
       "processing", // Payment is in progress
@@ -27,7 +28,10 @@ const paymentSchema = mongoose.Schema({
     ],
   },
   stripeOrderId: { type: String, required: true },
-  stripeClientSecerat: { type: String }, // If using Stripe or Razorpay
+  stripeClientSecerat: { type: String },
+  // If using Stripe or Razorpay
+  refundId: String,
+  refundAmount: Number,
 });
 
 export const PaymentModel = mongoose.model("Payment", paymentSchema);

@@ -1,6 +1,5 @@
 import { Server } from "socket.io";
 import { handleSocketConnection } from "./socketHandler.js";
-import { socketIdMap } from "./socketHandler.js";
 
 let io;
 
@@ -11,9 +10,6 @@ const initSocketServer = (server) => {
       methods: ["GET", "POST"],
     },
   });
-
-  console.log("Socket.IO initialized!");
-  console.log(".........socketIdsMap............",socketIdMap)
 
   handleSocketConnection(io);
 };

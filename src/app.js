@@ -50,7 +50,7 @@ app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/booking", bookingRouter);
 
 // client Routes
-app.use("/api/v1/client",clientRouter)
+app.use("/api/v1/client", clientRouter);
 
 // cleaner routes
 app.use("/api/v1/cleaner", cleanerRouter);
@@ -68,6 +68,7 @@ app.use("/api/v1/admin/cleaner", adminCleanerRouter);
 // Stripe webhooks (must come after other routes, but before body parsing)
 app.post("/webhook/paymentStatus", verifyStripePayment);
 app.post("/webhook/balance", balanceWebhook);
+app.post("/webhook/cancelBooking", balanceWebhook);
 
 // Default route for unhandled paths
 app.all("*", (req, res) => {

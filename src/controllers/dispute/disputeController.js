@@ -50,7 +50,6 @@ const createDispute = asyncHandler(async (req, res) => {
   const { bookingId, reason } = req.body;
 
   const role = req.user.role;
-  console.log("------user-------:", role);
   if (!bookingId || !reason)
     return res
       .status(400)

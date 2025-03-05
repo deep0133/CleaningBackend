@@ -19,7 +19,7 @@ const adminWalletSchema = new mongoose.Schema(
       required: true,
       default: 0,
       min: [0, "commission must be at least 0"], // Minimum value validator
-      max: [10000, "commission cannot exceed 100"], // Maximum value validator
+      max: [100, "commission cannot exceed 100"], // Maximum value validator
     },
     ownMoney: {
       type: Number,

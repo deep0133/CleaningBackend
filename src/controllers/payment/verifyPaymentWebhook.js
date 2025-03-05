@@ -5,9 +5,7 @@ import { Cart } from "../../models/Client/cart.model.js";
 import { PaymentModel } from "../../models/Client/paymentModel.js";
 import AdminWallet from "../../models/adminWallet/adminWallet.model.js";
 import { ApiResponse } from "../../utils/apiResponse.js";
-import { findNearbyCleanersController } from "../../utils/findNearByUser.js"
-
-import { ApiError } from "../../utils/apiError.js";
+import { findNearbyCleanersController } from "../../utils/findNearByUser.js";
 
 const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
 
@@ -15,12 +13,6 @@ const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 async function updateBookingStatus(bookingId, updates) {
   try {
-    console.log(
-      "------------updateBookingStatus------------",
-      updates.PaymentStatus,
-      " ------------------ bookingId-----------:",
-      bookingId
-    );
     const booking = await BookingService.findById(bookingId).populate(
       "Cleaner"
     );
@@ -60,14 +52,6 @@ async function updateBookingStatus(bookingId, updates) {
       const [longitude, latitude] = booking.CartData[0].Location.coordinates;
       const category = booking.CartData[0].categoryId;
 
-      console.log(
-        "==================called to findNearbyCleanersController==================",
-        longitude,
-        latitude,
-        bookingId,
-        category
-      );
-
       // Searching Cleaners and send notification to them
       const sent = await findNearbyCleanersController(
         longitude,
@@ -76,17 +60,11 @@ async function updateBookingStatus(bookingId, updates) {
         category
       );
       if (sent) {
-        console.log("Notification sent to nearby cleaners");
         return new ApiResponse(200, "Notification sent to nearby cleaners");
       } else {
-        console.log("Notification already sent to nearby cleaners");
         return new ApiResponse(400, "Notification not sent to nearby cleaners");
       }
     } else {
-      console.log(
-        "-----------------Payment not paid-----booking status------------",
-        updates.PaymentStatus
-      );
       return "date updated on payement success";
     }
   } catch (error) {
@@ -97,7 +75,6 @@ async function updateBookingStatus(bookingId, updates) {
 
 async function handleEvent(eventType, paymentIntent) {
   const bookingId = paymentIntent.metadata.bookingModelId;
-  console.log('bookingId',bookingId)
 
   const statusUpdates = {
     "payment_intent.amount_capturable_updated": {
@@ -114,7 +91,7 @@ async function handleEvent(eventType, paymentIntent) {
     "payment_intent.processing": { PaymentStatus: "processing" },
     "payment_intent.succeeded": { PaymentStatus: "paid" },
   };
-    console.log('---------------bookingId at handleEvent-------------',bookingId);
+
   if (statusUpdates[eventType]) {
     await updateBookingStatus(bookingId, statusUpdates[eventType]);
   } else {
@@ -138,20 +115,11 @@ export const verifyStripePayment = asyncHandler(async (request, response) => {
 
   const { type, data } = event;
   const paymentIntent = data.object;
-  console.log("----------------paymentIntent------------------------")
   const bookingId = paymentIntent.metadata.bookingModelId;
-  console.log("----------------bookingId at verifyPament----------------");
-  console.log(bookingId);
-
-
-
-
-
 
   try {
     await handleEvent(type, paymentIntent);
   } catch (error) {
-    console.error(`Error handling webhook event: ${error.message}`);
     return response.status(500).send("Internal Server Error");
   }
 
@@ -160,5 +128,3 @@ export const verifyStripePayment = asyncHandler(async (request, response) => {
   // Acknowledge receipt of the event
   response.status(200).send("Webhook event processed");
 });
-
-

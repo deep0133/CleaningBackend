@@ -9,9 +9,6 @@ const client = twilio(accountSid, authToken, { logLevel: "debug" });
 
 // // Function to send OTP
 async function sendOtp(phoneNumber) {
-  console.log("serviceSid", serviceSid);
-
-  console.log("--------phone number------:", phoneNumber);
   try {
     const verification = await client.verify.v2
       .services(serviceSid)
@@ -20,8 +17,6 @@ async function sendOtp(phoneNumber) {
         channel: "sms",
         time_to_live: 300,
       });
-
-    console.log("Verification Details:", verification);
 
     if (verification.status === "pending") {
       return {
@@ -47,9 +42,6 @@ async function sendOtp(phoneNumber) {
 // Function to verify OTP
 async function verifyOtp(phoneNumber, otpCode) {
   try {
-    console.log("hello world how are you");
-    console.log(`Service SID: ${serviceSid}`);
-
     // API call for verification check
     const verificationCheck = await client.verify.v2
       .services(serviceSid)
@@ -58,14 +50,8 @@ async function verifyOtp(phoneNumber, otpCode) {
         code: otpCode,
       });
 
-    console.log(
-      "Verification Check Response ---- in verify otp fun----:",
-      verificationCheck
-    );
-
     // Check if verification was successful
     if (verificationCheck.status === "approved") {
-      console.log(`Verification Check Response:`, verificationCheck);
       return {
         success: true,
         message: "OTP verification succeeded",

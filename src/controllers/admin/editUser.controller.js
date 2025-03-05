@@ -125,8 +125,6 @@ export const createdByAdmin = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Category field is required for cleaners");
   }
 
-  console.log();
-
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -219,7 +217,6 @@ export const createdByAdmin = asyncHandler(async (req, res) => {
       .json(new ApiResponse(200, { message: "Account Created" }));
   } catch (error) {
     // If error happens, rollback the transaction and log the error
-    console.error("Transaction error:", error);
 
     // Only abort if we haven't committed the transaction
     if (session.inTransaction()) {

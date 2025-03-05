@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/user.model.js";
 const SECRET_KEY = process.env.ACCESS_TOKEN_SECERET;
 
-function isAuthenticated(req, res, next) { 
+function isAuthenticated(req, res, next) {
   const authorization = req.headers.authorization;
 
   if (!authorization) {
@@ -25,7 +25,7 @@ function isAuthenticated(req, res, next) {
 
     req.user = decoded;
 
-        next();
+    next();
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
       return res.status(401).json({
@@ -50,7 +50,6 @@ async function isCleaner(req, res, next) {
     "-password -isOtpVerified -accessToken -refreshToken"
   );
 
-  console.log("is cleaner?", user?.role === "cleaner");
   req.cleaner_data_in_user = user;
   if (!user || user.role !== "cleaner") {
     return res.status(403).json({

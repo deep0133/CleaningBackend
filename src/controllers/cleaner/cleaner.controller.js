@@ -66,33 +66,7 @@ const addOrUpdateAccountDetails = asyncHandler(async (req, res) => {
 });
 
 const getCleanerNotification = asyncHandler(async (req, res) => {
-  console.log(
-    "------------------------------------------------------------------------------------------"
-  );
-  console.log(
-    "------------------------------------------------------------------------------------------"
-  );
-  console.log(
-    "------------------------------------------------------------------------------------------"
-  );
-  console.log(
-    "------------------------------------------------------------------------------------------"
-  );
-  console.log(
-    "------------------------------------------------------------------------------------------"
-  );
-  console.log(
-    "------------------------------------------------------------------------------------------"
-  );
-  console.log(
-    "------------------------------------------------------------------------------------------"
-  );
-  console.log(
-    "------------------------------------------------------------------------------------------"
-  );
-   console.log(req.user._id);
-  const notification = await NotificationModel.find({cleanerId:req.user_id});
-  console.log('----------notification---------------',notification);
+  const notification = await NotificationModel.find({ cleanerId: req.user_id });
 
   const cleaner = await NotificationModel.find({
     cleanerId: req.user._id,
@@ -101,11 +75,6 @@ const getCleanerNotification = asyncHandler(async (req, res) => {
     select: "BookingStatus",
   });
 
-  console.log(
-    "-----------------------total notificaitons ----------------",
-    cleaner?.length
-  );
-   console.log("-----------------cleaner------------",cleaner)
   if (!cleaner) {
     return res
       .status(200)
@@ -120,9 +89,7 @@ const getCleanerNotification = asyncHandler(async (req, res) => {
     }
 
     // const booking = notification.bookingId;
-    const booking  = notification;
-    console.log("==========booking--==========",booking);
-    console.log("--------bookingStatus----------", booking.bookingId?.BookingStatus);
+    const booking = notification;
 
     if (notification.timestamp.start < currentTime) {
       continue;
@@ -135,10 +102,7 @@ const getCleanerNotification = asyncHandler(async (req, res) => {
     }
 
     newNoti.push(notification);
-    console.log("---------bookings----------");
   }
-
-  console.log("-------------newNoti----------------:", newNoti?.length);
 
   res.status(200).json({
     success: true,
