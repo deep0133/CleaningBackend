@@ -306,11 +306,13 @@ export const endService = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
   const { otp } = req.body;
 
+  console.log("-------Step 1----------: Booking Service-------");
   const booking = await BookingService.findById(bookingId).populate(
     "PaymentId"
   );
 
   const cleaner = await Cleaner.findOne({ user: booking.Cleaner });
+  console.log("-------Step 2---------: Cleaner----------------:", cleaner);
 
   if (cleaner.user.toString() !== req.user._id.toString()) {
     return res.status(401).json({
@@ -319,6 +321,7 @@ export const endService = asyncHandler(async (req, res) => {
     });
   }
 
+  console.log("----------Step - 3---------------");
   if (!booking || booking.OTP.end !== otp) {
     return res.status(400).json({ success: false, message: "Invalid OTP" });
   }
@@ -328,6 +331,7 @@ export const endService = asyncHandler(async (req, res) => {
 
   const walletAdmin = await adminWallet.findOne();
 
+  console.log("----------Step 4----------: adminWallet------:", walletAdmin);
   const adminCommission = adminWallet?.commission ?? 20;
 
   // Convert payment amount to a `money` object (stored in cents)
@@ -336,27 +340,47 @@ export const endService = asyncHandler(async (req, res) => {
     toCents(booking.PaymentId.PaymentValue)
   );
 
+  console.log(
+    "----------step - 5 --------: paidAmountByUser----:",
+    paidAmountByUser
+  );
   // Calculate admin earnings (commission in cents)
   const adminEarnings = money(
     null,
     Math.round((adminCommission * paidAmountByUser.value) / 100)
   );
 
+  console.log(
+    "----------step - 6 --------: paidAmountByUser----:",
+    adminEarnings
+  );
   // // Calculate cleaner's amount in cents
   const cleanerAmountCal = money(
     null,
     paidAmountByUser.value - adminEarnings.value
   );
 
+  console.log(
+    "----------step - 7 --------: paidAmountByUser----:",
+    cleanerAmountCal
+  );
   // Convert back to dollars/rupees safely
   const finalCleanerAmount = toNum(cleanerAmountCal.value);
 
+  console.log(
+    "----------step - 8 --------: finalCleanerAmount----:",
+    finalCleanerAmount
+  );
   // Update walletAdmin's ownMoney properly
   walletAdmin.ownMoney = add(
     money(adminWallet.ownMoney, toCents(adminWallet.ownMoney)),
     adminEarnings
   ).number;
 
+  console.log(
+    "----------step - 9 --------: finalCleanerAmount----:",
+    finalCleanerAmount
+  );
   // udpate cleaner
   cleaner.availability = true;
   cleaner.currentBooking = null;
