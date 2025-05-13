@@ -9,8 +9,10 @@ const handleSocketConnection = (io) => {
     // socket.onAny((event) => {
     //   console.log(`Event received: ${event}`);
     // });
+    console.count("---incomming socket connetion-----");
     socket.on("register_client", async (data) => {
       try {
+        console.log("--------Register Socket ----:---:", data);
         // Parse the incoming data
         const parsedData = JSON.parse(data);
 

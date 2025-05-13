@@ -100,9 +100,13 @@ async function handleEvent(eventType, paymentIntent) {
 }
 
 export const verifyStripePayment = asyncHandler(async (request, response) => {
+  console.log("---------verifyStripePayment--------:");
   // const sig = request.headers["stripe-signature"];
   const sig = request.headers["stripe-signature"]; // Stripe's signature header
   const rawBody = request.rawBody; // Raw request body from express.raw
+
+  console.log("--------sig--------:", sig);
+  console.log("--------Row Body--------:", rawBody);
 
   let event;
 
@@ -114,6 +118,7 @@ export const verifyStripePayment = asyncHandler(async (request, response) => {
   }
 
   const { type, data } = event;
+  console.log("---------enent type --------:", type);
   const paymentIntent = data.object;
   const bookingId = paymentIntent.metadata.bookingModelId;
 

@@ -14,7 +14,8 @@ import validateTimeSlot from "../../utils/validateTimeSlot.js";
 
 import { money, add, toCents, toNum } from "../../utils/moneyConversion.js";
 
-const stripe = new Stripe(process.env.STRIPE_SERCRET_KEY);
+const stripeSecKey = process.env.STRIPE_SERCRET_KEY;
+const stripe = new Stripe(stripeSecKey);
 
 export const createBooking = asyncHandler(async (req, res) => {
   const { cartId } = req.body;
@@ -107,6 +108,10 @@ export const createBooking = asyncHandler(async (req, res) => {
     await session.commitTransaction();
     session.endSession();
 
+    console.log(
+      "-----response : client_secret-----:",
+      paymentIntent.client_secret
+    );
     res.status(201).json({
       success: true,
       booking,
@@ -371,6 +376,8 @@ export const endService = asyncHandler(async (req, res) => {
     "----------step - 8 --------: finalCleanerAmount----:",
     finalCleanerAmount
   );
+
+  console.log("----Step - 8.1------ ownMoney ------:", walletAdmin?.ownMoney);
   // Update walletAdmin's ownMoney properly
   walletAdmin.ownMoney = add(
     money(adminWallet.ownMoney, toCents(adminWallet.ownMoney)),
@@ -601,7 +608,7 @@ export const sendStartOtp = asyncHandler(async (req, res) => {
       .json({ success: false, message: "Booking not found" });
   }
 
-  const start = new Date(booking.CartData[0].TimeSlot.start); // Start time in milliseconds\
+  const start = new Date(booking.CartData[0].TimeSlot.start); // Start time in milliseconds
 
   const now = new Date();
 

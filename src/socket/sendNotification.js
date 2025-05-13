@@ -30,6 +30,7 @@ export const sendNotificationToClient = (notificationData) => {
   let socketId = null;
   for (const key in clientSocketIdMap) {
     try {
+      console.log("------key   --- in send Notification.js-----:", key);
       const parsedKey = JSON.parse(key);
       if (parsedKey.clientId === targetClientId) {
         socketId = clientSocketIdMap[key];

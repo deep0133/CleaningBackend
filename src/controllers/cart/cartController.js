@@ -30,6 +30,8 @@ export const getAllCartItems = asyncHandler(async (req, res) => {
     })),
   };
 
+  console.table(JSON.stringify(cartItems));
+
   res.status(200).json({
     success: true,
     cartItems: updatedCartItems,
@@ -60,7 +62,10 @@ export const addToCart = asyncHandler(async (req, res) => {
     });
   }
 
-  console.log("--------step 1 --- time checking---------------");
+  console.log(
+    "--------step 1 --- incomming time slot---------------",
+    timeSlot
+  );
 
   if (new Date(timeSlot.start) >= new Date(timeSlot.end)) {
     return res.status(400).json({
@@ -117,38 +122,6 @@ export const addToCart = asyncHandler(async (req, res) => {
 
   // if user already have any item in cart then make them to complete payment then try again to book other service OR remove item from cart
   if (existingCart) {
-    // const duplicateItem = await Cart.findOne({
-    //   User: req.user._id,
-    //   cart: {
-    //     $elemMatch: {
-    //       categoryId: categoryId,
-    //       "TimeSlot.start": timeSlot.start,
-    //       "TimeSlot.end": timeSlot.end,
-    //       UserAddress: userAddress,
-    //       "Location.coordinates": location.coordinates,
-    //     },
-    //   },
-    // });
-
-    // if (duplicateItem) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: "An identical cart item already exists.",
-    //   });
-    // }
-
-    // existingCart.cart.push({
-    //   categoryId,
-    //   TimeSlot: timeSlot,
-    //   addOns,
-    //   Duration: durationInHours,
-    //   TotalPrice: totalPrice,
-    //   UserAddress: userAddress,
-    //   Location: location,
-    // });
-
-    // const updatedCart = await existingCart.save();
-
     if (existingCart?.cart?.length > 0) {
       console.log("----cart found-------------");
       res.status(201).json({
@@ -156,6 +129,10 @@ export const addToCart = asyncHandler(async (req, res) => {
         message: "Complete payment of cart item first or remove item from cart",
       });
     } else {
+      console.log(
+        "----------step 4 existingCart cart - timeSlot in else block --------:",
+        timeSlot
+      );
       existingCart.cart.push({
         categoryId,
         TimeSlot: timeSlot,
@@ -174,6 +151,10 @@ export const addToCart = asyncHandler(async (req, res) => {
       });
     }
   } else {
+    console.log(
+      "----------step 4 existingCart cart - timeSlot in else block --------:",
+      timeSlot
+    );
     const newCart = new Cart({
       User: req.user._id,
       cart: [
@@ -191,7 +172,7 @@ export const addToCart = asyncHandler(async (req, res) => {
 
     await newCart.save();
 
-    // console.log("----cart added -------------", newCart);
+    console.log("----step 5 cart added -------------", newCart);
     res.status(201).json({
       success: true,
       message: "Item added to cart successfully",
@@ -353,3 +334,27 @@ export const deleteCart = asyncHandler(async (req, res) => {
     message: "Cart item deleted successfully",
   });
 });
+
+const data = {
+  _id: "6798b5ea74b9e1ccbbfcf7a1",
+  User: "677e4eab3d4d9663cadefe95",
+  cart: [
+    {
+      TimeSlot: {
+        start: "2025-03-07T08:43:00.000Z",
+        end: "2025-03-07T09:43:00.000Z",
+      },
+      Location: { type: "Point", coordinates: [76.8463543, 30.7297052] },
+      categoryId: "676e813cd37f244e08a47594",
+      addOns: "676e54c6d187f38ab315f2a4",
+      Duration: 1,
+      TotalPrice: 10,
+      UserAddress:
+        "14, it park rd, phase - i, sector 13, chandigarh, sukteri, chandigarh 133301, india",
+      _id: "67ca95b9c6f6d8af1a1791f3",
+    },
+  ],
+  createdAt: "2025-01-28T10:48:10.411Z",
+  updatedAt: "2025-03-07T06:44:09.046Z",
+  __v: 26,
+};
