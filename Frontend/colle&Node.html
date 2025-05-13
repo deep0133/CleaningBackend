@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <ul>
+      <li>1</li>
+      <li>2</li>
+      <li>3</li>
+      <li>4</li>
+      <li>5</li>
+    </ul>
+
+    <button onclick="check()">Add new ele</button>
+
+    <script>
+      // Static NodeList
+      const check = () => {
+        const staticNodeList = document.querySelectorAll("li");
+        console.log(staticNodeList); // NodeList of all <li> elements
+
+        // Add a new <li>
+        const ul = document.querySelector("ul");
+        const newLi = document.createElement("li");
+        newLi.textContent = "New Item";
+        ul.appendChild(newLi);
+
+        // The NodeList does NOT update automatically:
+        console.log(staticNodeList); // Does NOT include the new <li>
+      };
+    </script>
+  </body>
+</html>

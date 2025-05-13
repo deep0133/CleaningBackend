@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stripe Payment Test</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      #card-element {
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+      }
+      button {
+        background-color: #6772e5;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Stripe Payment Test</h1>
+    <div id="payment-form" style="border: 4px solid black">
+      <label for="card-element">Card Details:</label>
+      <div id="card-element"></div>
+      <button id="pay-button">Pay Now</button>
+    </div>
+    <div
+      id="payment-result"
+      style="margin-top: 20px; color: green; font-weight: bold"
+    ></div>
+
+    <script>
+      // Replace with your actual Stripe public key
+      const publicKey =
+        "pk_test_51Mi80fCEoWIuFDI917bgxQnMkjVpUCSBWbKm3Xe8YZFE3eDq4e8O8cMVKkc2DVz6yQRh0Jo15CMOFKb9CzQdMx2M00rgdGCUp6";
+      const stripe = Stripe(publicKey);
+      // Initialize Stripe Elements
+      const elements = stripe.elements();
+      const cardElement = elements.create("card");
+      cardElement.mount("#card-element");
+
+      // Button Handler
+      document
+        .getElementById("pay-button")
+        .addEventListener("click", async () => {
+          const payButton = document.getElementById("pay-button");
+          const paymentResult = document.getElementById("payment-result");
+          payButton.disabled = true;
+          paymentResult.textContent = "Processing payment...";
+
+          try {
+            const input = prompt("Enter the Client Secret key");
+            const clientSecret = input;
+            // Confirm the payment with Stripe
+            const { error, paymentIntent } = await stripe.confirmCardPayment(
+              clientSecret,
+              {
+                payment_method: { card: cardElement },
+              }
+            );
+
+            if (error) {
+              throw error;
+            }
+
+            if (paymentIntent.status === "succeeded") {
+              paymentResult.textContent = "Payment Successful!";
+            } else {
+              paymentResult.textContent = `Payment failed with status: ${paymentIntent.status}`;
+            }
+          } catch (err) {
+            console.error(err);
+            paymentResult.textContent = `Payment failed: ${err.message}`;
+          } finally {
+            payButton.disabled = false;
+          }
+        });
+    </script>
+  </body>
+</html>
